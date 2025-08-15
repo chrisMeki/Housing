@@ -7,11 +7,19 @@ import Analytics from "./pages/Analytics";
 import PropertySearch from "./pages/SearchProperties";
 import PropertyListings from "./pages/PropertyListings";
 import Profile from "./pages/UserProfile";
+import HousingLandingPage from "./pages/Landingpage";
+import LoginPage from "./pages/signup";
+import CreateAccountPage from "./pages/createaccount";
 
 function App() {
   return (
     <Router>
       <Routes>
+         <Route path='/signup' element={<CreateAccountPage/>} />
+         <Route path='/login' element={<LoginPage/>} />
+          <Route path='/dashboard' element={<Dashboard />} />
+          <Route path='/signup' element={<CreateAccountPage/>} />
+         <Route path='/' element={<HousingLandingPage/>} />
         <Route path='/dashboard' element={<Dashboard />} />
         <Route path='/mapping' element={<PropertyMapping/>}/>
         <Route path='/registrations' element={<HousingRegistration/>}/>
