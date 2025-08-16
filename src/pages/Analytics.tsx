@@ -3,6 +3,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Home, MapPin, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Users, Building, FileText, Clock, Shield, Database, Menu, Bell, Settings, X } from 'lucide-react';
 import Sidebar from '../components/sidebar'; // Importing the Sidebar component
 
+
+
 const Analytics = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState('6m');

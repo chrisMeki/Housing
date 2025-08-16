@@ -21,6 +21,7 @@ interface Filters {
   propertyType: string;
   priceRange: string;
   minBedrooms: string;
+  neighborhood: string;
 }
 
 interface Marker {
@@ -30,83 +31,97 @@ interface Marker {
 
 const PropertyMapping: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [highlightedProperty, setHighlightedProperty] = useState<number | null>(null);
   const [filters, setFilters] = useState<Filters>({
     propertyType: '',
     priceRange: '',
-    minBedrooms: ''
+    minBedrooms: '',
+    neighborhood: ''
   });
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-
-  // Property data
-  const properties: Property[] = [
-    {
-      id: 1,
-      title: "Modern Downtown Apartment",
-      location: "Downtown, New York",
-      lat: 40.7589,
-      lng: -73.9851,
-      price: 750000,
-      type: "apartment",
-      bedrooms: 2,
-      bathrooms: 2,
-      area: 1200,
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      description: "Stunning modern apartment in the heart of downtown with panoramic city views."
-    },
-    {
-      id: 2,
-      title: "Suburban Family Home",
-      location: "Suburbia, Chicago",
-      lat: 41.8781,
-      lng: -87.6298,
-      price: 450000,
-      type: "house",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1800,
-      image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      description: "Spacious family home with large backyard in a quiet neighborhood."
-    },
-    {
-      id: 3,
-      title: "Luxury Waterfront Condo",
-      location: "Miami Beach, Florida",
-      lat: 25.7617,
-      lng: -80.1918,
-      price: 1200000,
-      type: "condo",
-      bedrooms: 2,
-      bathrooms: 2.5,
-      area: 1500,
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      description: "Luxury condo with ocean views and premium amenities."
-    },
-    {
-      id: 4,
-      title: "Charming Villa",
-      location: "Santa Barbara, California",
-      lat: 34.4208,
-      lng: -119.6982,
-      price: 950000,
-      type: "villa",
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2200,
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      description: "Beautiful villa with Mediterranean architecture and mountain views."
-    }
-  ];
+  const [loading, setLoading] = useState(true);
 
   // Refs for map
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<Marker[]>([]);
 
-  // Initialize with all properties
+  // Fetch properties from API
   useEffect(() => {
-    setFilteredProperties(properties);
+    const fetchProperties = async () => {
+      try {
+        // For demo purposes, we'll use hardcoded Harare properties
+        const data = [
+          {
+            id: 1,
+            title: "Luxury Apartment in Borrowdale",
+            location: "Borrowdale, Harare",
+            lat: -17.7833,
+            lng: 31.0667,
+            price: 350000,
+            type: "apartment",
+            bedrooms: 3,
+            bathrooms: 2,
+            area: 180,
+            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00",
+            description: "Modern apartment in Harare's most prestigious suburb"
+          },
+          {
+            id: 2,
+            title: "Family Home in Avondale",
+            location: "Avondale, Harare",
+            lat: -17.8000,
+            lng: 31.0333,
+            price: 275000,
+            type: "house",
+            bedrooms: 4,
+            bathrooms: 3,
+            area: 350,
+            image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
+            description: "Spacious family home in a quiet Avondale neighborhood"
+          },
+          {
+            id: 3,
+            title: "Townhouse in Mount Pleasant",
+            location: "Mount Pleasant, Harare",
+            lat: -17.7700,
+            lng: 31.0500,
+            price: 420000,
+            type: "house",
+            bedrooms: 3,
+            bathrooms: 2.5,
+            area: 280,
+            image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
+            description: "Elegant townhouse with modern finishes in Mount Pleasant"
+          },
+          {
+            id: 4,
+            title: "Executive Flat in CBD",
+            location: "Harare CBD",
+            lat: -17.8292,
+            lng: 31.0522,
+            price: 195000,
+            type: "apartment",
+            bedrooms: 2,
+            bathrooms: 1,
+            area: 120,
+            image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb",
+            description: "Convenient city center apartment with great amenities"
+          }
+        ];
+        
+        setProperties(data);
+        setFilteredProperties(data);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
   }, []);
 
   // Utility functions
@@ -138,7 +153,7 @@ const PropertyMapping: React.FC = () => {
         <div style="display: flex; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.85rem; color: #5d6d7e;">
           <span>🛏️ ${property.bedrooms}</span>
           <span>🚿 ${property.bathrooms}</span>
-          <span>📐 ${property.area} sqft</span>
+          <span>📐 ${property.area} sqm</span>
         </div>
         <div style="font-size: 0.85rem; color: #666; line-height: 1.4; margin-bottom: 0.8rem;">${property.description}</div>
       </div>
@@ -189,11 +204,28 @@ const PropertyMapping: React.FC = () => {
       if (!L) return;
 
       if (mapRef.current && !mapInstance.current) {
-        mapInstance.current = L.map(mapRef.current).setView([39.8283, -98.5795], 4);
+        // Center on Harare
+        mapInstance.current = L.map(mapRef.current).setView([-17.8252, 31.0335], 12);
+        
+        // Add base map layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '© OpenStreetMap contributors'
         }).addTo(mapInstance.current);
+
+        // Add Harare landmarks
+        const landmarks = [
+          { name: "Harare CBD", lat: -17.8292, lng: 31.0522 },
+          { name: "National Gallery", lat: -17.8258, lng: 31.0486 },
+          { name: "Chapman Golf Club", lat: -17.8075, lng: 31.0675 },
+          { name: "Harare Gardens", lat: -17.8300, lng: 31.0450 }
+        ];
+
+        landmarks.forEach(landmark => {
+          L.marker([landmark.lat, landmark.lng])
+            .addTo(mapInstance.current)
+            .bindPopup(`<b>${landmark.name}</b>`);
+        });
       }
 
       addMarkersToMap();
@@ -261,12 +293,14 @@ const PropertyMapping: React.FC = () => {
       const matchesType = !filters.propertyType || property.type === filters.propertyType;
       const matchesPrice = !filters.priceRange || property.price <= parseInt(filters.priceRange);
       const matchesBedrooms = !filters.minBedrooms || property.bedrooms >= parseInt(filters.minBedrooms);
+      const matchesNeighborhood = !filters.neighborhood || 
+        property.location.toLowerCase().includes(filters.neighborhood.toLowerCase());
 
-      return matchesType && matchesPrice && matchesBedrooms;
+      return matchesType && matchesPrice && matchesBedrooms && matchesNeighborhood;
     });
 
     setFilteredProperties(filtered);
-  }, [filters]);
+  }, [filters, properties]);
 
   const handleFilterChange = (filterName: keyof Filters, value: string) => {
     setFilters(prev => ({
@@ -293,7 +327,7 @@ const PropertyMapping: React.FC = () => {
           >
             <Menu className="h-6 w-6 text-gray-600" />
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Property Mapping</h1>
+          <h1 className="text-xl font-bold text-gray-800">Harare Property Map</h1>
           <div className="flex items-center space-x-2">
             <button className="p-2 rounded-md hover:bg-gray-100">
               <Bell className="h-6 w-6 text-gray-600" />
@@ -304,8 +338,8 @@ const PropertyMapping: React.FC = () => {
         <div className="p-4 sm:p-6">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Property Explorer</h1>
-            <p className="text-sm sm:text-base text-gray-600">Browse properties on the map with interactive filters</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Harare Property Explorer</h1>
+            <p className="text-sm sm:text-base text-gray-600">Browse properties in Harare with interactive filters</p>
           </div>
 
           {/* Filters */}
@@ -328,17 +362,17 @@ const PropertyMapping: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-col gap-1">
-                  <label className="font-semibold text-gray-700 text-sm">Max Price</label>
+                  <label className="font-semibold text-gray-700 text-sm">Max Price (USD)</label>
                   <select 
                     className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={filters.priceRange}
                     onChange={(e) => handleFilterChange('priceRange', e.target.value)}
                   >
                     <option value="">Any Price</option>
+                    <option value="200000">Under $200K</option>
+                    <option value="300000">Under $300K</option>
                     <option value="500000">Under $500K</option>
-                    <option value="800000">Under $800K</option>
-                    <option value="1200000">Under $1.2M</option>
-                    <option value="2000000">Under $2M</option>
+                    <option value="1000000">Under $1M</option>
                   </select>
                 </div>
                 
@@ -356,40 +390,71 @@ const PropertyMapping: React.FC = () => {
                     <option value="4">4+</option>
                   </select>
                 </div>
+                
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-gray-700 text-sm">Neighborhood</label>
+                  <select 
+                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={filters.neighborhood}
+                    onChange={(e) => handleFilterChange('neighborhood', e.target.value)}
+                  >
+                    <option value="">All Areas</option>
+                    <option value="Borrowdale">Borrowdale</option>
+                    <option value="Avondale">Avondale</option>
+                    <option value="Mount Pleasant">Mount Pleasant</option>
+                    <option value="Greendale">Greendale</option>
+                    <option value="CBD">CBD</option>
+                    <option value="Mbare">Mbare</option>
+                    <option value="Highfield">Highfield</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Map View */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            <div ref={mapRef} className="h-[500px] sm:h-[600px] w-full"></div>
+            {loading ? (
+              <div className="h-[500px] sm:h-[600px] w-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : (
+              <div ref={mapRef} className="h-[500px] sm:h-[600px] w-full"></div>
+            )}
           </div>
 
           {/* Property List (for mobile) */}
           <div className="lg:hidden bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Properties ({filteredProperties.length})</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Properties ({filteredProperties.length})
+              {filters.neighborhood && ` in ${filters.neighborhood}`}
+            </h3>
             <div className="space-y-4">
-              {filteredProperties.map(property => (
-                <div 
-                  key={property.id}
-                  className="flex gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-                >
+              {filteredProperties.length === 0 ? (
+                <p className="text-gray-500">No properties match your filters</p>
+              ) : (
+                filteredProperties.map(property => (
                   <div 
-                    className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0"
-                    style={{ backgroundImage: `url('${property.image}')` }}
-                  ></div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{property.title}</h4>
-                    <p className="text-green-600 font-bold">{formatPrice(property.price)}</p>
-                    <p className="text-sm text-gray-500">📍 {property.location}</p>
-                    <div className="flex gap-3 text-sm text-gray-600 mt-1">
-                      <span>🛏️ {property.bedrooms}</span>
-                      <span>🚿 {property.bathrooms}</span>
-                      <span>📐 {property.area} sqft</span>
+                    key={property.id}
+                    className="flex gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                  >
+                    <div 
+                      className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0"
+                      style={{ backgroundImage: `url('${property.image}')` }}
+                    ></div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{property.title}</h4>
+                      <p className="text-green-600 font-bold">{formatPrice(property.price)}</p>
+                      <p className="text-sm text-gray-500">📍 {property.location}</p>
+                      <div className="flex gap-3 text-sm text-gray-600 mt-1">
+                        <span>🛏️ ${property.bedrooms}</span>
+                        <span>🚿 ${property.bathrooms}</span>
+                        <span>📐 ${property.area} sqm</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
