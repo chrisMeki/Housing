@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Map, Home, Search, Users, List, Settings, Bell, FileText, BarChart3, User, ChevronRight, X } from 'lucide-react';
+// @ts-ignore
 import logo from '../assets/images/logo.png'; // Adjust the path to your logo file
 
 export default function HousingMappingSidebar({ isOpen = true, onClose = () => {} }) {

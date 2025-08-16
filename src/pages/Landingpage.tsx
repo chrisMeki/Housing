@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Home, Users, Shield, ArrowRight, Menu, X } from 'lucide-react';
+// @ts-ignore
 import logo from "../assets/images/logo.png";
+
+
 
 export default function HousingLandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
