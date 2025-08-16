@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Map, Home, Search, Users, List, Settings, Bell, FileText, BarChart3, User, ChevronRight, X } from 'lucide-react';
+import logo from '../assets/images/logo.png'; // Adjust the path to your logo file
 
 export default function HousingMappingSidebar({ isOpen = true, onClose = () => {} }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Logo component
+  const Logo = () => (
+    <div className="flex items-center">
+      <img
+        src={logo}
+        alt="city council"
+        className={`${isCollapsed ? 'w-10 h-10' : 'w-30 h-auto'} object-contain transition-all duration-300`}
+      />
+    </div>
+  );
 
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-600' },
@@ -14,6 +26,7 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
     { id: 'search', icon: Search, label: 'Search Properties', path: '/search', color: 'text-orange-600' },
     { id: 'listings', icon: List, label: 'Property Listings', path: '/listings', color: 'text-teal-600' },
     { id: 'profile', icon: User, label: 'User Profile', path: '/profile', color: 'text-gray-600' },
+    { id: 'logout', icon: User, label: 'Logout', path: '/logout', color: 'text-gray-600' },
   ];
 
   return (
@@ -34,9 +47,7 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
           {/* Header */}
           <div className="p-4 border-b border-gray-200/30 flex-shrink-0">
             <div className="flex items-center justify-between">
-              {!isCollapsed && (
-                <h1 className="text-xl font-bold text-gray-800">HousingMap Pro</h1>
-              )}
+              <Logo />
               <button
                 onClick={onClose}
                 className="lg:hidden p-2 rounded-lg hover:bg-gray-100/50 transition-colors"

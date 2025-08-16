@@ -74,13 +74,15 @@ export default function CreateAccountPage() {
         password: '',
         confirmPassword: '',
       });
+      // Navigate to login after successful account creation
+      navigate('/');
     } else {
       setErrors(newErrors);
     }
   };
 
   const navigateToLogin = () => {
-    navigate('/login');
+    navigate('/');
   };
 
   return (

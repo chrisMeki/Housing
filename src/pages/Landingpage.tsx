@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Home, Users, Shield, ArrowRight, Menu, X } from 'lucide-react';
+import logo from "../assets/images/logo.png";
 
 export default function HousingLandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,16 +12,24 @@ export default function HousingLandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Logo component to reuse
+  const Logo = () => (
+    <div className="flex items-center">
+      <img
+        src={logo}
+        alt="City council"
+        className="w-50 h-50 sm:w-30 sm:h-30 object-contain"
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-800 to-cyan-900">
       {/* Navigation */}
       <nav className={`fixed w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-black/20 backdrop-blur-md' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-8 w-8 text-teal-400" />
-              <span className="text-2xl font-bold text-white">HouseMap</span>
-            </div>
+            <Logo />
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
@@ -205,9 +214,8 @@ export default function HousingLandingPage() {
       {/* Footer */}
       <footer className="bg-black/20 backdrop-blur-sm py-12 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <MapPin className="h-8 w-8 text-teal-400" />
-            <span className="text-2xl font-bold text-white">HouseMap</span>
+          <div className="flex items-center justify-center mb-6">
+            <Logo />
           </div>
           <p className="text-gray-400 mb-4">
             Making housing registration simple, secure, and accessible for everyone.

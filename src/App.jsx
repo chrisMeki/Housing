@@ -10,12 +10,13 @@ import Profile from "./pages/UserProfile";
 import HousingLandingPage from "./pages/Landingpage";
 import LoginPage from "./pages/signup";
 import CreateAccountPage from "./pages/createaccount";
+import LogoutPage from "./pages/logoutpage";
 
 function App() {
   return (
     <Router>
       <Routes>
-         <Route path='/signup' element={<CreateAccountPage/>} />
+         
          <Route path='/login' element={<LoginPage/>} />
           <Route path='/dashboard' element={<Dashboard />} />
           <Route path='/signup' element={<CreateAccountPage/>} />
@@ -28,6 +29,7 @@ function App() {
         <Route path='/search' element={<PropertySearch/>}/>
         <Route path='/listings' element={<PropertyListings/>}/>
         <Route path='/profile' element={<Profile/>}/>
+        <Route path='/logout' element={<LogoutPage/>}/>
 
        
         {/* Add a default redirect to dashboard */}
