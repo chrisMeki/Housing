@@ -21,7 +21,7 @@ export default function HousingLandingPage() {
       <img
         src={logo}
         alt="City council"
-        className="w-50 h-50 sm:w-30 sm:h-30 object-contain"
+        className="w-20 h-20 sm:w-30 sm:h-30 object-contain"
       />
     </div>
   );

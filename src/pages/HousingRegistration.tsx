@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import {
   MapPin,
   Home,
@@ -10,8 +10,6 @@ import {
   Save,
   X,
   Menu,
-  Bell,
-  Settings,
   List,
   Plus,
   Eye,
@@ -21,8 +19,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
+import HousingRegistrationService from "../services/Housing_service"; // Adjust the path as needed
 
 interface Coordinates {
   lat: string;
@@ -32,6 +32,7 @@ interface Coordinates {
 interface Photo {
   name: string;
   url: string;
+  file?: File;
 }
 
 interface FormData {
@@ -63,7 +64,7 @@ interface RegisteredHouse {
   yearBuilt: number;
   description: string;
   amenities: string[];
-  photos: Photo[];
+  photos: any[]; // Changed to any[] to handle different API response structures
   status: "Pending" | "Approved" | "Rejected" | "Needs Documents";
   createdAt: string;
   updatedAt: string;
@@ -99,64 +100,28 @@ const HousingRegistration: React.FC = () => {
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [registeredHouses, setRegisteredHouses] = useState<RegisteredHouse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data for registered houses
-  const [registeredHouses] = useState<RegisteredHouse[]>([
-    {
-      _id: "1",
-      propertyType: "Single Family Home",
-      address: "123 Main Street, Springfield, IL 62701",
-      ownerName: "John Smith",
-      ownerPhone: "+1 (555) 123-4567",
-      ownerEmail: "john.smith@email.com",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1500,
-      yearBuilt: 2020,
-      description: "Beautiful family home with modern amenities",
-      amenities: ["Parking", "Garden", "Air Conditioning"],
-      photos: [],
-      status: "Approved",
-      createdAt: "2024-01-15T10:30:00Z",
-      updatedAt: "2024-01-20T14:15:00Z",
-    },
-    {
-      _id: "2",
-      propertyType: "Apartment",
-      address: "456 Oak Avenue, Chicago, IL 60601",
-      ownerName: "Sarah Johnson",
-      ownerPhone: "+1 (555) 987-6543",
-      ownerEmail: "sarah.j@email.com",
-      bedrooms: 2,
-      bathrooms: 1,
-      area: 900,
-      yearBuilt: 2018,
-      description: "Cozy downtown apartment with city views",
-      amenities: ["Elevator", "Security", "Balcony"],
-      photos: [],
-      status: "Pending",
-      createdAt: "2024-01-18T09:15:00Z",
-      updatedAt: "2024-01-18T09:15:00Z",
-    },
-    {
-      _id: "3",
-      propertyType: "Townhouse",
-      address: "789 Pine Road, Austin, TX 78701",
-      ownerName: "Mike Davis",
-      ownerPhone: "+1 (555) 456-7890",
-      ownerEmail: "mike.davis@email.com",
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2200,
-      yearBuilt: 2019,
-      description: "Spacious townhouse in prime location",
-      amenities: ["Parking", "Terrace", "Gym"],
-      photos: [],
-      status: "Needs Documents",
-      createdAt: "2024-01-10T16:45:00Z",
-      updatedAt: "2024-01-22T11:30:00Z",
-    },
-  ]);
+  // Fetch registered houses when component mounts or when activeTab changes to "registered"
+  useEffect(() => {
+    if (activeTab === "registered") {
+      fetchRegisteredHouses();
+    }
+  }, [activeTab]);
+
+  const fetchRegisteredHouses = async () => {
+    setIsLoading(true);
+    try {
+      const response = await HousingRegistrationService.getAllHousingRegistrations();
+      setRegisteredHouses(response.data || response);
+    } catch (error) {
+      console.error("Failed to fetch registered houses:", error);
+      alert("Failed to load registered houses. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const propertyTypes: string[] = [
     "Single Family Home",
@@ -215,6 +180,7 @@ const HousingRegistration: React.FC = () => {
         ...files.map((file) => ({
           name: file.name,
           url: URL.createObjectURL(file),
+          file: file,
         })),
       ],
     }));
@@ -244,10 +210,46 @@ const HousingRegistration: React.FC = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-
-    alert("Property registered successfully!");
+    
+    try {
+      // Prepare data for API (convert string numbers to actual numbers)
+      const apiData = {
+        ...formData,
+        bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : 0,
+        bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : 0,
+        area: formData.area ? parseInt(formData.area) : 0,
+        yearBuilt: formData.yearBuilt ? parseInt(formData.yearBuilt) : 0,
+      };
+      
+      await HousingRegistrationService.createHousingRegistration(apiData);
+      alert("Property registered successfully!");
+      
+      // Reset form
+      setFormData({
+        propertyType: "",
+        address: "",
+        coordinates: { lat: "", lng: "" },
+        ownerName: "",
+        ownerPhone: "",
+        ownerEmail: "",
+        bedrooms: "",
+        bathrooms: "",
+        area: "",
+        yearBuilt: "",
+        description: "",
+        amenities: [],
+        photos: [],
+      });
+      
+      // Switch to registered tab and refresh the list
+      setActiveTab("registered");
+      fetchRegisteredHouses();
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      alert(error.message || "Failed to register property. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -282,6 +284,26 @@ const HousingRegistration: React.FC = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Helper function to get photo URL regardless of API response structure
+  const getPhotoUrl = (photo: any): string => {
+    if (typeof photo === 'string') {
+      return photo; // If the API returns a string URL directly
+    } else if (photo && typeof photo === 'object') {
+      return photo.url || photo.path || ''; // Try common property names for the URL
+    }
+    return '';
+  };
+
+  // Helper function to get photo name
+  const getPhotoName = (photo: any, index: number): string => {
+    if (typeof photo === 'string') {
+      return `Photo ${index + 1}`;
+    } else if (photo && typeof photo === 'object') {
+      return photo.name || `Photo ${index + 1}`;
+    }
+    return `Photo ${index + 1}`;
   };
 
   return (
@@ -669,7 +691,12 @@ const HousingRegistration: React.FC = () => {
           ) : (
             /* Registered Houses List */
             <div className="space-y-6">
-              {registeredHouses.length === 0 ? (
+              {isLoading ? (
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-12 text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading registered houses...</p>
+                </div>
+              ) : registeredHouses.length === 0 ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-12 text-center">
                   <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">
@@ -734,6 +761,47 @@ const HousingRegistration: React.FC = () => {
                           </button>
                         </div>
                       </div>
+
+                      {/* Display house photos if available */}
+                      {house.photos && house.photos.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Photos
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {house.photos.map((photo, index) => {
+                              const photoUrl = getPhotoUrl(photo);
+                              return photoUrl ? (
+                                <div key={index} className="relative group">
+                                  <img
+                                    src={photoUrl}
+                                    alt={getPhotoName(photo, index)}
+                                    className="w-full h-32 object-cover rounded-lg"
+                                    onError={(e) => {
+                                      // If image fails to load, show a placeholder
+                                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjNmMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iMC4zNWVtIiBmb250LXNpemU9IjE4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <a
+                                      href={photoUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-2 bg-white bg-opacity-80 rounded-full"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div key={index} className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                                  <ImageIcon className="w-8 h-8 text-gray-400" />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div className="bg-gray-50 rounded-lg p-3">

@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, MapPin, Home, Calendar, Phone, Mail, Edit3, Camera, Settings, FileText, Shield, Menu } from 'lucide-react';
 import Sidebar from '../components/sidebar';
+import UserService from '../services/login_Service';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const userData = {
-    name: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "+1 (555) 123-4567",
-    id: "HR-2024-001234",
-    registrationDate: "March 15, 2024",
-    status: "Verified",
-    avatar: null
-  };
+  const [userData, setUserData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    id: "",
+    registrationDate: "",
+    status: "Unverified"
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const properties = [
     {
@@ -47,6 +48,118 @@ export default function Profile() {
     { name: "Insurance Certificate", type: "PDF", date: "2024-07-20", status: "Verified" },
     { name: "Utility Connection Form", type: "PDF", date: "2024-08-01", status: "Pending" }
   ];
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get user data from localStorage (set during signup/login)
+        const storedUserData = localStorage.getItem('userData');
+        
+        if (storedUserData) {
+          // Parse the stored user data
+          const user = JSON.parse(storedUserData);
+          setUserData({
+            name: user.fullname || user.name || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            id: user._id || user.id || "",
+            registrationDate: new Date(user.createdAt || user.registrationDate || Date.now()).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            status: user.verified ? "Verified" : "Unverified"
+          });
+        } else {
+          // If no stored data, try to get user by ID
+          const userId = localStorage.getItem('userId');
+          if (userId) {
+            const response = await UserService.getUserById(userId);
+            setUserData({
+              name: response.data.fullname || response.data.name || "",
+              email: response.data.email || "",
+              phone: response.data.phone || "",
+              id: response.data._id || response.data.id || "",
+              registrationDate: new Date(response.data.createdAt || response.data.registrationDate || Date.now()).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              status: response.data.verified ? "Verified" : "Unverified"
+            });
+          }
+        }
+      } catch (err: any) {
+        setError("Failed to load user data");
+        console.error("Error fetching user data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleSaveChanges = async () => {
+    try {
+      const userId = localStorage.getItem('userId') || userData.id;
+      if (userId) {
+        const updatedData = {
+          fullname: userData.name,
+          email: userData.email,
+          phone: userData.phone
+        };
+        
+        await UserService.updateUser(userId, updatedData);
+        
+        // Update localStorage with new data
+        const updatedUser = {
+          fullname: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          _id: userId,
+          createdAt: new Date().toISOString(), // This would ideally come from the server
+          verified: userData.status === "Verified"
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUser));
+        
+        setIsEditing(false);
+        // Optionally show a success message
+      }
+    } catch (err: any) {
+      setError("Failed to update user data");
+      console.error("Error updating user data:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-lg">{error}</div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -87,7 +200,9 @@ export default function Profile() {
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mt-4">{userData.name}</h3>
                   <p className="text-sm text-gray-600">ID: {userData.id}</p>
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 mt-2">
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    userData.status === "Verified" ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  } mt-2`}>
                     <Shield className="w-4 h-4 mr-1" />
                     {userData.status}
                   </div>
@@ -140,7 +255,8 @@ export default function Profile() {
                         {isEditing ? (
                           <input 
                             type="text" 
-                            defaultValue={userData.name}
+                            value={userData.name}
+                            onChange={(e) => setUserData({...userData, name: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -152,7 +268,8 @@ export default function Profile() {
                         {isEditing ? (
                           <input 
                             type="email" 
-                            defaultValue={userData.email}
+                            value={userData.email}
+                            onChange={(e) => setUserData({...userData, email: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -167,7 +284,8 @@ export default function Profile() {
                         {isEditing ? (
                           <input 
                             type="tel" 
-                            defaultValue={userData.phone}
+                            value={userData.phone}
+                            onChange={(e) => setUserData({...userData, phone: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -187,7 +305,10 @@ export default function Profile() {
                     </div>
                     {isEditing && (
                       <div className="mt-6 flex space-x-4">
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button 
+                          onClick={handleSaveChanges}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                        >
                           Save Changes
                         </button>
                         <button 

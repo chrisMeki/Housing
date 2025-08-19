@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home, 
   TrendingUp, 
@@ -26,10 +26,14 @@ import {
   FileText,
   User,
   X,
-  Edit
+  Edit,
+  Upload,
+  Image as ImageIcon,
+  Camera
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, TooltipProps } from 'recharts';
 import Sidebar from "../components/sidebar";
+import PropertyService from '../services/propertylistings_service'; // Import the service
 
 interface Property {
   id: number;
@@ -68,98 +72,87 @@ interface ChartData {
   percentage?: number;
 }
 
+interface Photo {
+  name: string;
+  url: string;
+  file?: File;
+}
+
+interface NewPropertyData {
+  userId: string;
+  propertyType: string;
+  address: string;
+  lat: string;
+  lng: string;
+  ownerName: string;
+  ownerPhone: string;
+  ownerEmail: string;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  yearBuilt: number;
+  description: string;
+  amenities: string[];
+  photos: Photo[];
+}
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
+  const [newProperty, setNewProperty] = useState<NewPropertyData>({
+    userId: "689cebfebc443e32f31720e5",
+    propertyType: "Single Family Home",
+    address: "",
+    lat: "",
+    lng: "",
+    ownerName: "",
+    ownerPhone: "",
+    ownerEmail: "",
+    bedrooms: 0,
+    bathrooms: 0,
+    area: 0,
+    yearBuilt: new Date().getFullYear(),
+    description: "",
+    amenities: [],
+    photos: []
+  });
+  const [currentAmenity, setCurrentAmenity] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  const properties: Property[] = [
-    {
-      id: 1,
-      title: "Modern Downtown Loft",
-      price: "$2,500/month",
-      location: "Downtown District",
-      beds: 2,
-      baths: 2,
-      sqft: 1200,
-      rating: 4.8,
-      image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&h=200&fit=crop",
-      status: "available",
-      type: "apartment"
-    },
-    {
-      id: 2,
-      title: "Suburban Family Home",
-      price: "$3,200/month",
-      location: "Westside Heights",
-      beds: 4,
-      baths: 3,
-      sqft: 2400,
-      rating: 4.9,
-      image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=300&h=200&fit=crop",
-      status: "pending",
-      type: "house"
-    },
-    {
-      id: 3,
-      title: "Luxury Penthouse",
-      price: "$5,800/month",
-      location: "Marina Bay",
-      beds: 3,
-      baths: 2,
-      sqft: 1800,
-      rating: 5.0,
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300&h=200&fit=crop",
-      status: "available",
-      type: "penthouse"
-    },
-    {
-      id: 4,
-      title: "Cozy Studio",
-      price: "$1,400/month",
-      location: "Arts Quarter",
-      beds: 1,
-      baths: 1,
-      sqft: 600,
-      rating: 4.5,
-      image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&h=200&fit=crop",
-      status: "rented",
-      type: "studio"
-    },
-    {
-      id: 5,
-      title: "Garden Apartment",
-      price: "$2,100/month",
-      location: "Green Valley",
-      beds: 2,
-      baths: 1,
-      sqft: 950,
-      rating: 4.6,
-      image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=300&h=200&fit=crop",
-      status: "available",
-      type: "apartment"
-    },
-    {
-      id: 6,
-      title: "Executive Suite",
-      price: "$4,200/month",
-      location: "Business District",
-      beds: 3,
-      baths: 2,
-      sqft: 1600,
-      rating: 4.7,
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&h=200&fit=crop",
-      status: "pending",
-      type: "apartment"
-    }
-  ];
+  // Fetch properties on component mount
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        const response = await PropertyService.getAllProperties();
+        // Assuming the API returns data in a format that matches our Property interface
+        setProperties(response.data || response); // Adjust based on your API response structure
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch properties');
+        console.error('Error fetching properties:', err);
+        // Fallback to mock data if API fails
+        setProperties(properties);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchProperties();
+  }, []);
+
+  
   const stats: Stat[] = [
     { 
       title: "Total Properties", 
-      value: "1,247", 
+      value: properties.length.toString(), 
       change: "+12%", 
       icon: Home, 
       color: "bg-gradient-to-r from-blue-500 to-blue-600",
@@ -167,7 +160,7 @@ const Dashboard = () => {
     },
     { 
       title: "Active Listings", 
-      value: "892", 
+      value: properties.filter(p => p.status === 'available').length.toString(), 
       change: "+8%", 
       icon: TrendingUp, 
       color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
@@ -283,6 +276,12 @@ const Dashboard = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error} (using mock data)
+            </div>
+          )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
             {stats.map((stat, index) => (
@@ -420,14 +419,9 @@ const Dashboard = () => {
                   <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
                 
-                <button className="hidden lg:flex items-center space-x-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg lg:rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow hover:shadow-md text-sm lg:text-base">
+                <button className="flex items-center space-x-1 lg:space-x-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg lg:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow hover:shadow-md text-sm lg:text-base">
                   <Filter className="w-3 h-3 lg:w-4 lg:h-4" />
-                  <span>Advanced</span>
-                </button>
-                
-                <button className="flex items-center space-x-1 lg:space-x-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg lg:rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow hover:shadow-md text-sm lg:text-base">
-                  <Plus className="w-3 h-3 lg:w-4 lg:h-4" />
-                  <span className="hidden sm:inline">Add Property</span>
+                  <span>Filter</span>
                 </button>
               </div>
             </div>
@@ -449,85 +443,90 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
-                {/* Properties Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                  {filteredProperties.map((property) => (
-                    <div
-                      key={property.id}
-                      className="bg-white/60 backdrop-blur-sm rounded-lg lg:rounded-xl overflow-hidden border border-white/30 cursor-pointer transition-all duration-300 hover:shadow-md hover:bg-white/80 hover:-translate-y-1"
-                      onMouseEnter={() => setHoveredCard(property.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      <div className="relative">
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className="w-full h-40 lg:h-48 object-cover"
-                        />
-                        <div className={`absolute top-2 left-2 px-2 py-0.5 lg:px-3 lg:py-1 rounded-full text-xs font-medium ${
-                          property.status === 'available' ? 'bg-green-100 text-green-800' :
-                          property.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {property.status}
+                {loading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                    {filteredProperties.map((property) => (
+                      <div
+                        key={property.id}
+                        className="bg-white/60 backdrop-blur-sm rounded-lg lg:rounded-xl overflow-hidden border border-white/30 cursor-pointer transition-all duration-300 hover:shadow-md hover:bg-white/80 hover:-translate-y-1"
+                        onMouseEnter={() => setHoveredCard(property.id)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        <div className="relative">
+                          <img
+                            src={property.image}
+                            alt={property.title}
+                            className="w-full h-40 lg:h-48 object-cover"
+                          />
+                          <div className={`absolute top-2 left-2 px-2 py-0.5 lg:px-3 lg:py-1 rounded-full text-xs font-medium ${
+                            property.status === 'available' ? 'bg-green-100 text-green-800' :
+                            property.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {property.status}
+                          </div>
+                          
+                          {hoveredCard === property.id && (
+                            <div className="absolute top-2 right-2 flex space-x-1 lg:space-x-2">
+                              <button className="p-1 lg:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+                                <Heart className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
+                              </button>
+                              <button className="p-1 lg:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+                                <Share2 className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                         
-                        {hoveredCard === property.id && (
-                          <div className="absolute top-2 right-2 flex space-x-1 lg:space-x-2">
-                            <button className="p-1 lg:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                              <Heart className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
-                            </button>
-                            <button className="p-1 lg:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                              <Share2 className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
-                            </button>
+                        <div className="p-3 lg:p-4">
+                          <h3 className="font-semibold text-gray-900 text-sm lg:text-base mb-1">{property.title}</h3>
+                          <p className="text-blue-600 font-bold text-lg lg:text-xl mb-1 lg:mb-2">{property.price}</p>
+                          <p className="text-gray-500 text-xs lg:text-sm flex items-center mb-2 lg:mb-3">
+                            <MapPin className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                            {property.location}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2 lg:space-y-4 text-xs lg:text-sm text-gray-600">
+                              <span className="flex items-center">
+                                <Bed className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                                {property.beds}
+                              </span>
+                              <span className="flex items-center">
+                                <Bath className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                                {property.baths}
+                              </span>
+                              <span className="flex items-center">
+                                <Square className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                                {property.sqft}ft²
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Star className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-400 mr-1" />
+                              <span className="text-xs lg:text-sm font-medium">{property.rating}</span>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      
-                      <div className="p-3 lg:p-4">
-                        <h3 className="font-semibold text-gray-900 text-sm lg:text-base mb-1">{property.title}</h3>
-                        <p className="text-blue-600 font-bold text-lg lg:text-xl mb-1 lg:mb-2">{property.price}</p>
-                        <p className="text-gray-500 text-xs lg:text-sm flex items-center mb-2 lg:mb-3">
-                          <MapPin className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                          {property.location}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2 lg:space-x-4 text-xs lg:text-sm text-gray-600">
-                            <span className="flex items-center">
-                              <Bed className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                              {property.beds}
-                            </span>
-                            <span className="flex items-center">
-                              <Bath className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                              {property.baths}
-                            </span>
-                            <span className="flex items-center">
-                              <Square className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                              {property.sqft}ft²
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <Star className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-400 mr-1" />
-                            <span className="text-xs lg:text-sm font-medium">{property.rating}</span>
-                          </div>
+                          
+                          {hoveredCard === property.id && (
+                            <div className="mt-2 lg:mt-4 pt-2 lg:pt-4 border-t border-gray-200">
+                              <button 
+                                className="w-full bg-blue-500 text-white py-1 lg:py-2 px-3 lg:px-4 rounded-md lg:rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-xs lg:text-sm"
+                                onClick={() => setSelectedProperty(property)}
+                              >
+                                <Eye className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-2" />
+                                View Details
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        
-                        {hoveredCard === property.id && (
-                          <div className="mt-2 lg:mt-4 pt-2 lg:pt-4 border-t border-gray-200">
-                            <button 
-                              className="w-full bg-blue-500 text-white py-1 lg:py-2 px-3 lg:px-4 rounded-md lg:rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-xs lg:text-sm"
-                              onClick={() => setSelectedProperty(property)}
-                            >
-                              <Eye className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-2" />
-                              View Details
-                            </button>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

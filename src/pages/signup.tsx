@@ -1,6 +1,7 @@
 import { useState, ChangeEvent, KeyboardEvent } from 'react';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import UserService from "../services/login_Service";// Adjust the import path as needed
 
 interface FormData {
   email: string;
@@ -12,18 +13,6 @@ interface FormErrors {
   password?: string;
 }
 
-// Mock user data
-const MOCK_USERS = [
-  {
-    email: 'user@example.com',
-    password: 'password123'
-  },
-  {
-    email: 'test@test.com',
-    password: 'test123'
-  }
-];
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +23,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -77,24 +67,26 @@ export default function LoginPage() {
     setIsLoading(true);
     setLoginError('');
 
-    // Simulate API call with mock data
-    setTimeout(() => {
-      const user = MOCK_USERS.find(
-        user => 
-          user.email === formData.email && 
-          user.password === formData.password
-      );
+    try {
+      const response = await UserService.login({
+        email: formData.email,
+        password: formData.password
+      });
 
-      if (user) {
-        console.log('Login successful:', user);
-        // In a real app, you would store the auth token or user data here
+      if (response.token) {
+        setLoginSuccess(true);
         localStorage.setItem('isAuthenticated', 'true');
-        navigate('/dashboard'); // Redirect to dashboard or home page
-      } else {
-        setLoginError('Invalid email or password');
+        
+        // Show success message for 2 seconds before redirecting
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       }
+    } catch (error: any) {
+      setLoginError(error.message || 'Invalid email or password');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -109,7 +101,25 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
+        {/* Success Popup - now positioned inside the form container */}
+        {loginSuccess && (
+          <div className="absolute inset-0 bg-white bg-opacity-95 rounded-2xl flex items-center justify-center z-10 p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Login Successful!</h3>
+              <p className="text-gray-600 text-center mb-4">
+                You're being redirected to your dashboard
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-xs">
+                <div className="bg-green-600 h-2.5 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="text-center mb-8">
           <div className="bg-blue-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-10 h-10 text-blue-600" />
@@ -225,15 +235,6 @@ export default function LoginPage() {
               Sign up here
             </button>
           </p>
-        </div>
-
-        {/* Demo credentials hint */}
-        <div className="mt-6 p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
-          <p className="font-medium">Demo credentials:</p>
-          <ul className="list-disc list-inside mt-1">
-            <li>user@example.com / password123</li>
-            <li>test@test.com / test123</li>
-          </ul>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -15,105 +15,67 @@ import {
   X
 } from 'lucide-react';
 import Sidebar from "../components/sidebar";
+import PropertyService from '../services/propertylistings_service';
+
+// Define the Property interface
+interface Property {
+  id: number;
+  title: string;
+  price: number;
+  location: string;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  type: string;
+  image?: string;
+  rating?: number;
+  features?: string[];
+  agent?: string;
+}
 
 const PropertyListings = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState('all');
-  const [propertyType, setPropertyType] = useState('all');
-  const [bedrooms, setBedrooms] = useState('all');
-  const [favorites, setFavorites] = useState(new Set());
-  const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [priceRange, setPriceRange] = useState<string>('all');
+  const [propertyType, setPropertyType] = useState<string>('all');
+  const [bedrooms, setBedrooms] = useState<string>('all');
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const properties = [
-    {
-      id: 1,
-      title: "Modern Downtown Apartment",
-      price: 450000,
-      location: "Downtown, City Center",
-      bedrooms: 2,
-      bathrooms: 2,
-      area: 850,
-      type: "apartment",
-      image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=250&fit=crop",
-      rating: 4.8,
-      features: ["Parking", "Balcony", "Gym"],
-      agent: "Sarah Johnson"
-    },
-    {
-      id: 2,
-      title: "Luxury Family Villa",
-      price: 850000,
-      location: "Suburb Heights, North District",
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2200,
-      type: "house",
-      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&h=250&fit=crop",
-      rating: 4.9,
-      features: ["Garden", "Pool", "Garage"],
-      agent: "Michael Chen"
-    },
-    {
-      id: 3,
-      title: "Cozy Studio Loft",
-      price: 280000,
-      location: "Arts Quarter, East Side",
-      bedrooms: 1,
-      bathrooms: 1,
-      area: 520,
-      type: "studio",
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=250&fit=crop",
-      rating: 4.6,
-      features: ["High Ceilings", "Exposed Brick", "Natural Light"],
-      agent: "Emma Rodriguez"
-    },
-    {
-      id: 4,
-      title: "Waterfront Penthouse",
-      price: 1200000,
-      location: "Harbor District, Waterfront",
-      bedrooms: 3,
-      bathrooms: 3,
-      area: 1800,
-      type: "apartment",
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=250&fit=crop",
-      rating: 4.9,
-      features: ["Ocean View", "Terrace", "Concierge"],
-      agent: "David Kim"
-    },
-    {
-      id: 5,
-      title: "Suburban Townhouse",
-      price: 520000,
-      location: "Green Valley, West District",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1450,
-      type: "townhouse",
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=250&fit=crop",
-      rating: 4.7,
-      features: ["Backyard", "Fireplace", "Quiet Street"],
-      agent: "Lisa Thompson"
-    },
-    {
-      id: 6,
-      title: "Historic Brownstone",
-      price: 720000,
-      location: "Heritage District, Old Town",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1650,
-      type: "house",
-      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=250&fit=crop",
-      rating: 4.5,
-      features: ["Original Features", "Garden", "Character"],
-      agent: "Robert Wilson"
-    }
-  ];
+  // Fetch properties on component mount
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        const response = await PropertyService.getAllProperties();
+        // Adjust based on your API response structure
+        if (Array.isArray(response)) {
+          setProperties(response);
+        } else if (response && Array.isArray(response.data)) {
+          setProperties(response.data);
+        } else {
+          throw new Error('Invalid response format from API');
+        }
+      } catch (err: unknown) {
+        console.error('Error fetching properties:', err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch properties');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const toggleFavorite = (propertyId) => {
+    fetchProperties();
+  }, []);
+
+  const toggleFavorite = (propertyId: number) => {
     setFavorites(prev => {
       const newFavorites = new Set(prev);
       if (newFavorites.has(propertyId)) {
@@ -145,7 +107,7 @@ const PropertyListings = () => {
     return matchesSearch && matchesPrice && matchesType && matchesBedrooms;
   });
 
-  const formatPrice = (price) => {
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -154,11 +116,11 @@ const PropertyListings = () => {
     }).format(price);
   };
 
-  const PropertyCard = ({ property }) => (
+  const PropertyCard = ({ property }: { property: Property }) => (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
       <div className="relative h-48 overflow-hidden rounded-md mb-4">
         <img
-          src={property.image}
+          src={property.image || "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=250&fit=crop"}
           alt={property.title}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
@@ -185,7 +147,7 @@ const PropertyListings = () => {
         <h3 className="text-lg font-semibold text-gray-900">{property.title}</h3>
         <div className="flex items-center gap-1">
           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm text-gray-600">{property.rating}</span>
+          <span className="text-sm text-gray-600">{property.rating || 4.5}</span>
         </div>
       </div>
       
@@ -210,7 +172,7 @@ const PropertyListings = () => {
       </div>
       
       <div className="flex flex-wrap gap-2 mb-4">
-        {property.features.slice(0, 3).map((feature, index) => (
+        {property.features && property.features.slice(0, 3).map((feature, index) => (
           <span
             key={index}
             className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs"
@@ -225,7 +187,7 @@ const PropertyListings = () => {
           <p className="text-lg font-bold text-gray-900">
             {formatPrice(property.price)}
           </p>
-          <p className="text-sm text-gray-500">Agent: {property.agent}</p>
+          <p className="text-sm text-gray-500">Agent: {property.agent || "Unknown"}</p>
         </div>
         <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
           View Details
@@ -234,12 +196,12 @@ const PropertyListings = () => {
     </div>
   );
 
-  const PropertyRow = ({ property }) => (
+  const PropertyRow = ({ property }: { property: Property }) => (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50">
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         <div className="w-full md:w-64 h-48 overflow-hidden rounded-md flex-shrink-0">
           <img
-            src={property.image}
+            src={property.image || "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=250&fit=crop"}
             alt={property.title}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
@@ -251,7 +213,7 @@ const PropertyListings = () => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="text-sm text-gray-600">{property.rating}</span>
+                <span className="text-sm text-gray-600">{property.rating || 4.5}</span>
               </div>
               <button
                 onClick={() => toggleFavorite(property.id)}
@@ -289,7 +251,7 @@ const PropertyListings = () => {
           </div>
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {property.features.slice(0, 3).map((feature, index) => (
+            {property.features && property.features.slice(0, 3).map((feature, index) => (
               <span
                 key={index}
                 className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs"
@@ -306,11 +268,50 @@ const PropertyListings = () => {
           </p>
           <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
             View Details
-          </button>
+        </button>
         </div>
       </div>
     </div>
   );
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 lg:ml-72 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading properties...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 lg:ml-72 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Properties</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -502,16 +503,7 @@ const PropertyListings = () => {
           {/* Pagination */}
           <div className="mt-8 flex items-center justify-center">
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              <button className="px-3 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="px-3 py-2 bg-blue-600 text-white rounded-md">1</button>
-              <button className="px-3 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">2</button>
-              <button className="px-3 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">3</button>
-              <button className="px-3 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">
-                Next
-              </button>
-            </div>
+           </div>
           </div>
         </div>
       </div>
