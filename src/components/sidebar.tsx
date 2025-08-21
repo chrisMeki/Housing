@@ -23,7 +23,7 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
     { id: 'mapping', icon: Map, label: 'Property Mapping', path: '/mapping', color: 'text-green-600' },
     { id: 'registrations', icon: Users, label: 'Housing Registration', path: '/registrations', color: 'text-purple-600' },
     { id: 'reports', icon: FileText, label: 'Reports & Documents', path: '/reports', color: 'text-red-600' },
-    { id: 'listings', icon: List, label: 'Property Listings', path: '/listings', color: 'text-teal-600' },
+    { id: 'listings', icon: List, label: 'Property Sale & ownership', path: '/listings', color: 'text-teal-600' },
 
     { id: 'logout', icon: User, label: 'Logout', path: '/logout', color: 'text-gray-600' },
   ];

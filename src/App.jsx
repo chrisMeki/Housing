@@ -5,7 +5,7 @@ import HousingRegistration from  "./pages/HousingRegistration"
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
 import PropertySearch from "./pages/SearchProperties";
-import PropertyListings from "./pages/PropertyListings";
+import PropertyOwnershipTransfer from "./pages/PropertyOwnershipTransfer";
 import Profile from "./pages/UserProfile";
 import HousingLandingPage from "./pages/Landingpage";
 import LoginPage from "./pages/signup";
@@ -28,7 +28,7 @@ function App() {
         <Route path='/reports' element={<Reports/>}/>
         <Route path='/analytics' element={<Analytics/>}/>
         <Route path='/search' element={<PropertySearch/>}/>
-        <Route path='/listings' element={<PropertyListings/>}/>
+        <Route path='/listings' element={<PropertyOwnershipTransfer/>}/>
         <Route path='/profile' element={<Profile/>}/>
         <Route path='/logout' element={<LogoutPage/>}/>
 
