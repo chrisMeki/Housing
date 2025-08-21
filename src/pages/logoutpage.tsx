@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogOut, Shield, Menu } from 'lucide-react';
 import Sidebar from "../components/sidebar";
+import { useNavigate } from 'react-router-dom';
 
 const LogoutPage = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loggedOut, setLoggedOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Clear authentication data from storage
+  const clearAuthData = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('userData');
+    // Clear any other authentication-related data
+  };
 
   const handleLogoutClick = () => {
     setShowConfirmation(true);
@@ -20,10 +31,9 @@ const LogoutPage = () => {
       setIsLoggingOut(false);
       setLoggedOut(true);
       
-      // In a real app, you would:
-      // - Clear auth tokens from memory/cookies
-      // - Clear user data from state management
-      // - Redirect to login page
+      // Clear all authentication data
+      clearAuthData();
+      
       console.log('User logged out successfully');
     }, 1500);
   };
@@ -33,11 +43,18 @@ const LogoutPage = () => {
   };
 
   const handleBackToApp = () => {
-    // In a real app, this would navigate back to the main application
-    setLoggedOut(false);
-    setShowConfirmation(false);
-    console.log('Navigating back to app');
+    // Navigate back to dashboard (if user cancels logout)
+    navigate('/dashboard');
   };
+
+  // Check if user is authenticated on component mount
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!authToken) {
+      // If no auth token found, redirect to landing page
+      navigate('/');
+    }
+  }, [navigate]);
 
   if (loggedOut) {
     return (
@@ -54,13 +71,13 @@ const LogoutPage = () => {
           </p>
           <div className="space-y-3">
             <button
-              onClick={() => window.location.href = '/login'}
+              onClick={() => navigate('/login')}
               className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
             >
               Sign In Again
             </button>
             <button
-              onClick={handleBackToApp}
+              onClick={() => navigate('/')}
               className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
               Back to Home
@@ -138,7 +155,7 @@ const LogoutPage = () => {
                     Confirm Logout
                   </h1>
                   <p className="text-gray-600 mb-8">
-                    This will end your current session.
+                    This will end your current session. Are you sure you want to log out?
                   </p>
 
                   {isLoggingOut ? (
@@ -158,7 +175,7 @@ const LogoutPage = () => {
                         onClick={handleCancelLogout}
                         className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                       >
-                        Cancel
+                        No, Cancel
                       </button>
                     </div>
                   )}

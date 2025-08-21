@@ -73,10 +73,18 @@ export default function LoginPage() {
         password: formData.password
       });
 
+      // ✅ Assuming your backend response looks like:
+      // { token: "...", user: { _id: "123", email: "..." } }
       if (response.token) {
         setLoginSuccess(true);
+
+        // Store auth info in localStorage
         localStorage.setItem('isAuthenticated', 'true');
-        
+        localStorage.setItem('token', response.token);
+        if (response.user && response.user._id) {
+          localStorage.setItem('userId', response.user._id); // ✅ store user id
+        }
+
         // Show success message for 2 seconds before redirecting
         setTimeout(() => {
           navigate('/dashboard');

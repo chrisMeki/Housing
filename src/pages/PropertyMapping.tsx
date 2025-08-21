@@ -86,7 +86,7 @@ const PropertyMapping: React.FC = () => {
     `;
   };
 
-  // Load Leaflet
+  // Load Leaflet + Geocoder
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -96,18 +96,29 @@ const PropertyMapping: React.FC = () => {
         return;
       }
 
+      // Load Leaflet CSS + JS
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
-      link.onload = () => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
-        script.onload = () => {
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
+      script.onload = () => {
+        // Load Geocoder CSS + JS
+        const geocoderLink = document.createElement('link');
+        geocoderLink.rel = 'stylesheet';
+        geocoderLink.href = 'https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css';
+        document.head.appendChild(geocoderLink);
+
+        const geocoderScript = document.createElement('script');
+        geocoderScript.src = 'https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js';
+        geocoderScript.onload = () => {
           setLeafletLoaded(true);
         };
-        document.head.appendChild(script);
+        document.head.appendChild(geocoderScript);
       };
-      document.head.appendChild(link);
+      document.head.appendChild(script);
     };
 
     loadLeaflet();
@@ -135,6 +146,17 @@ const PropertyMapping: React.FC = () => {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstance.current);
+
+      // Add search control
+      if ((L.Control as any).geocoder) {
+        const geocoder = (L.Control as any).geocoder({
+          defaultMarkGeocode: true
+        })
+          .on('markgeocode', (e: any) => {
+            mapInstance.current.fitBounds(e.geocode.bbox);
+          })
+          .addTo(mapInstance.current);
+      }
     }
 
     // Add property markers

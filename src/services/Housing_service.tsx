@@ -8,11 +8,11 @@ const BASE_URL =
  */
 const HousingRegistrationService = {
   /**
-   * Fetch all housing registrations
+   * Fetch housing registrations by userId
    */
-  getAllHousingRegistrations: async (): Promise<any> => {
+  getHousingRegistrationsByUserId: async (userId: string): Promise<any> => {
     try {
-      const response = await axios.get(`${BASE_URL}/getall`, {
+      const response = await axios.get(`${BASE_URL}/getbyuser/${userId}`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
@@ -20,7 +20,7 @@ const HousingRegistrationService = {
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        throw error.response?.data || "Failed to retrieve housing registrations";
+        throw error.response?.data || "Failed to retrieve housing registrations for this user";
       } else {
         throw "An unexpected error occurred";
       }
@@ -42,6 +42,47 @@ const HousingRegistrationService = {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         throw error.response?.data || "Failed to create housing registration";
+      } else {
+        throw "An unexpected error occurred";
+      }
+    }
+  },
+
+  /**
+   * Update an existing housing registration
+   */
+  updateHousingRegistration: async (registrationId: string, updateData: any): Promise<any> => {
+    try {
+      const response = await axios.put(`${BASE_URL}/update/${registrationId}`, updateData, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data || "Failed to update housing registration";
+      } else {
+        throw "An unexpected error occurred";
+      }
+    }
+  },
+
+  /**
+   * Delete a housing registration
+   */
+  deleteHousingRegistration: async (registrationId: string): Promise<any> => {
+    try {
+      const response = await axios.delete(`${BASE_URL}/delete/${registrationId}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data || "Failed to delete housing registration";
       } else {
         throw "An unexpected error occurred";
       }

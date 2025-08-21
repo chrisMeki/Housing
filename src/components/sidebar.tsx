@@ -24,9 +24,9 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
     { id: 'registrations', icon: Users, label: 'Housing Registration', path: '/registrations', color: 'text-purple-600' },
     { id: 'reports', icon: FileText, label: 'Reports & Documents', path: '/reports', color: 'text-red-600' },
     { id: 'listings', icon: List, label: 'Property Sale & ownership', path: '/listings', color: 'text-teal-600' },
-
-    { id: 'logout', icon: User, label: 'Logout', path: '/logout', color: 'text-gray-600' },
   ];
+
+  const logoutItem = { id: 'logout', icon: User, label: 'Logout', path: '/logout', color: 'text-gray-600' };
 
   return (
     <>
@@ -57,9 +57,9 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-y-auto">
             {/* Navigation Menu */}
-            <nav className="p-4">
+            <nav className="p-4 flex-1">
               <div className="space-y-2">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
@@ -97,6 +97,39 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
                 })}
               </div>
             </nav>
+
+            {/* Logout button at the bottom */}
+            <div className="p-4 mt-auto border-t border-gray-200/30">
+              <NavLink
+                key={logoutItem.id}
+                to={logoutItem.path}
+                className={({ isActive }) => 
+                  `w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
+                    isActive 
+                      ? 'bg-blue-50/70 border-l-4 border-blue-500 text-blue-700' 
+                      : 'hover:bg-gray-50/50 text-gray-700'
+                  }`
+                }
+                onClick={() => {
+                  // Close mobile sidebar after navigation
+                  if (window.innerWidth < 1024) {
+                    onClose();
+                  }
+                }}
+              >
+                {({ isActive }) => (
+                  <>
+                    <logoutItem.icon className={`w-5 h-5 ${isActive ? logoutItem.color : 'text-gray-500'} group-hover:scale-110 transition-transform`} />
+                    {!isCollapsed && (
+                      <span className="ml-3 font-medium">{logoutItem.label}</span>
+                    )}
+                    {isActive && !isCollapsed && (
+                      <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            </div>
           </div>
         </div>
 
