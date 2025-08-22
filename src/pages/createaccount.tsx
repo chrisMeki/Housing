@@ -1,6 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserService from '../services/login_Service'; // Adjust the path as needed
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 interface FormData {
   firstName: string;
@@ -31,7 +32,7 @@ export default function CreateAccountPage() {
     password: '',
     confirmPassword: '',
     address: '',
-    contactNumber: ''
+    contactNumber: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -41,21 +42,20 @@ export default function CreateAccountPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target as { name: keyof FormData; value: string };
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
 
-    // Clear error when user starts typing
-    if (errors[name as keyof FormErrors]) {
+    if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: '',
       }));
     }
-    
-    // Clear API error when user makes changes
+
     if (apiError) {
       setApiError('');
     }
@@ -87,38 +87,46 @@ export default function CreateAccountPage() {
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       setApiError('');
-      
+
       try {
-        // Prepare user data for API
         const userData = {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
           address: formData.address,
-          contactNumber: formData.contactNumber
+          contactNumber: formData.contactNumber,
         };
 
-        // Call the signup service
-        const response = await UserService.signup(userData);
-        
-        // Handle successful signup
-        alert('Account created successfully!');
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          address: '',
-          contactNumber: ''
+        await UserService.signup(userData);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Account Created!',
+          text: 'Your account has been created successfully!',
+          confirmButtonText: 'OK',
+        }).then(() => {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            address: '',
+            contactNumber: '',
+          });
+
+          navigate('/login');
         });
-        
-        // Navigate to login after successful account creation
-        navigate('/login');
-      } catch (error: any) {
+      } catch (error) {
         console.error('Signup error:', error);
-        setApiError(error.message || error.error || 'Failed to create account. Please try again.');
+        if (error instanceof Error) {
+          setApiError(error.message);
+        } else if (typeof error === 'object' && error !== null && 'error' in error) {
+          setApiError((error as { error: string }).error);
+        } else {
+          setApiError('Failed to create account. Please try again.');
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -148,7 +156,10 @@ export default function CreateAccountPage() {
         </div>
 
         {apiError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative text-sm" role="alert">
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative text-sm"
+            role="alert"
+          >
             <span className="block sm:inline">{apiError}</span>
           </div>
         )}
@@ -253,7 +264,7 @@ export default function CreateAccountPage() {
             <input
               id="password"
               name="password"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleChange}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
@@ -267,13 +278,44 @@ export default function CreateAccountPage() {
               className="absolute right-3 top-8 text-gray-500 hover:text-gray-700 focus:outline-none"
             >
               {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 
+                       8.268 2.943 9.542 7-1.274 4.057-5.064 
+                       7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19
+                       c-4.478 0-8.268-2.943-9.543-7
+                       a9.97 9.97 0 011.563-3.029m5.858.908
+                       a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242
+                       M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29
+                       M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5
+                       c4.478 0 8.268 2.943 9.543 7
+                       a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                  />
                 </svg>
               )}
             </button>
@@ -287,7 +329,7 @@ export default function CreateAccountPage() {
             <input
               id="confirmPassword"
               name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
+              type={showConfirmPassword ? 'text' : 'password'}
               value={formData.confirmPassword}
               onChange={handleChange}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
@@ -301,13 +343,45 @@ export default function CreateAccountPage() {
               className="absolute right-3 top-8 text-gray-500 hover:text-gray-700 focus:outline-none"
             >
               {showConfirmPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5
+                       c4.478 0 8.268 2.943 9.542 7
+                       -1.274 4.057-5.064 7-9.542 7
+                       -4.477 0-8.268-2.943-9.542-7z"
+                  />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19
+                       c-4.478 0-8.268-2.943-9.543-7
+                       a9.97 9.97 0 011.563-3.029m5.858.908
+                       a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242
+                       M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29
+                       M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5
+                       c4.478 0 8.268 2.943 9.543 7
+                       a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                  />
                 </svg>
               )}
             </button>
@@ -329,7 +403,7 @@ export default function CreateAccountPage() {
           <div className="text-center text-sm">
             <p className="text-gray-600">
               Already have an account?{' '}
-              <button 
+              <button
                 type="button"
                 onClick={navigateToSignIn}
                 className="text-green-600 hover:text-green-700 font-medium transition duration-200"

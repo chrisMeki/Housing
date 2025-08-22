@@ -23,6 +23,12 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import HousingRegistrationService from "../services/Housing_service"; // Adjust the path as needed
+import { createClient } from '@supabase/supabase-js';
+import Swal from "sweetalert2";
+
+const supabaseUrl = "https://knovcypcijstnijircoy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtub3ZjeXBjaWpzdG5pamlyY295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3MjI1NzAsImV4cCI6MjA3MTI5ODU3MH0.sOo40BzZvQU-mcIo8A3QjW6ToXGijnWwe71Qot06cXA";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Coordinates {
   lat: string;
@@ -109,6 +115,8 @@ const HousingRegistration: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Fetch registered houses when component mounts or when activeTab changes to "registered"
   useEffect(() => {
@@ -177,25 +185,95 @@ const HousingRegistration: React.FC = () => {
   };
 
   const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? Array.from(e.target.files) : [];
-    setFormData((prev) => ({
-      ...prev,
-      photos: [
-        ...prev.photos,
-        ...files.map((file) => ({
-          name: file.name,
-          url: URL.createObjectURL(file),
-          file: file,
-        })),
-      ],
-    }));
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      
+      // Validate each file
+      const validFiles = files.filter(file => {
+        if (!file.type.match('image.*')) {
+          alert('Please select only image files (JPEG, PNG)');
+          return false;
+        }
+        
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+          alert('Each image should be less than 2MB');
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length === 0) return;
+
+      setSelectedFiles([...selectedFiles, ...validFiles]);
+
+      // Add to formData for preview
+      setFormData((prev) => ({
+        ...prev,
+        photos: [
+          ...prev.photos,
+          ...validFiles.map((file) => ({
+            name: file.name,
+            url: URL.createObjectURL(file),
+            file: file,
+          })),
+        ],
+      }));
+    }
   };
 
   const removePhoto = (index: number) => {
+    // Remove from selectedFiles
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
+    
+    // Remove from formData
     setFormData((prev) => ({
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index),
     }));
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    try {
+      setUploadProgress(0);
+      const uploadedUrls: string[] = [];
+      
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 9)}-${Date.now()}.${fileExt}`;
+        const filePath = `housing_registration/${fileName}`;
+
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('housing_registration')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type,
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase
+          .storage
+          .from('housing_registration')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+        setUploadProgress((uploadedUrls.length / files.length) * 100);
+      }
+
+      return uploadedUrls;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw new Error('Failed to upload images. Please try again.');
+    } finally {
+      setUploadProgress(null);
+    }
   };
 
   const validateForm = () => {
@@ -222,6 +300,15 @@ const HousingRegistration: React.FC = () => {
         throw new Error("User ID not found. Please log in again.");
       }
 
+      // Upload images first if selected
+      let imageUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        imageUrls = await uploadImages(selectedFiles);
+        if (imageUrls.length !== selectedFiles.length) {
+          throw new Error("Failed to upload some images. Please try again.");
+        }
+      }
+
       // Prepare the data in the format the API expects
       const apiData = {
         userId,
@@ -238,24 +325,33 @@ const HousingRegistration: React.FC = () => {
         yearBuilt: formData.yearBuilt ? parseInt(formData.yearBuilt) : 0,
         description: formData.description,
         amenities: formData.amenities,
-        photos: formData.photos.map(photo => ({
-          name: photo.name,
-          url: photo.url
+        photos: imageUrls.map((url, index) => ({
+          name: selectedFiles[index].name,
+          url: url
         }))
       };
 
-      if (editingHouse) {
-        // Update existing house
-        await HousingRegistrationService.updateHousingRegistration(editingHouse._id, apiData);
-        setSuccessMessage("Property updated successfully!");
-      } else {
-        // Create new house
-        await HousingRegistrationService.createHousingRegistration(apiData);
-        setSuccessMessage("Property registered successfully!");
-      }
-      
-      // Show success popup
-      setShowSuccessPopup(true);
+     if (editingHouse) {
+  // Update existing house
+  await HousingRegistrationService.updateHousingRegistration(editingHouse._id, apiData);
+  
+  Swal.fire({
+    icon: "success",
+    title: "Updated!",
+    text: "Property updated successfully!",
+    confirmButtonText: "OK"
+  });
+} else {
+  // Create new house
+  await HousingRegistrationService.createHousingRegistration(apiData);
+  
+  Swal.fire({
+    icon: "success",
+    title: "Registered!",
+    text: "Property registered successfully!",
+    confirmButtonText: "OK"
+  });
+}
       
       // Reset form and editing state
       setFormData({
@@ -274,6 +370,7 @@ const HousingRegistration: React.FC = () => {
         amenities: [],
         photos: [],
       });
+      setSelectedFiles([]);
       setEditingHouse(null);
 
       // Switch to registered tab after a delay
@@ -318,23 +415,33 @@ const HousingRegistration: React.FC = () => {
   };
 
   const handleDelete = async (houseId: string) => {
-    if (!window.confirm("Are you sure you want to delete this property?")) {
-      return;
-    }
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-    try {
-      await HousingRegistrationService.deleteHousingRegistration(houseId);
-      setSuccessMessage("Property deleted successfully!");
-      setShowSuccessPopup(true);
-      
-      // Refresh the list after a short delay
-      setTimeout(() => {
-        setShowSuccessPopup(false);
-        fetchRegisteredHouses();
-      }, 2000);
-    } catch (error: any) {
-      console.error("Delete failed:", error);
-      alert(error.message || "Failed to delete property. Please try again.");
+    if (result.isConfirmed) {
+      try {
+        await HousingRegistrationService.deleteHousingRegistration(houseId);
+        setSuccessMessage("Property deleted successfully!");
+        setShowSuccessPopup(true);
+        
+        // Refresh the list after a short delay
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+          fetchRegisteredHouses();
+        }, 2000);
+        
+        Swal.fire("Deleted!", "The property has been removed.", "success");
+      } catch (error: any) {
+        console.error("Delete failed:", error);
+        Swal.fire("Error!", error.message || "Failed to delete property. Please try again.", "error");
+      }
     }
   };
 
@@ -355,6 +462,7 @@ const HousingRegistration: React.FC = () => {
       amenities: [],
       photos: [],
     });
+    setSelectedFiles([]);
     setEditingHouse(null);
   };
 
@@ -416,25 +524,8 @@ const HousingRegistration: React.FC = () => {
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Success Popup */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-              Success!
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {successMessage}
-            </p>
-            <p className="text-gray-500 text-sm">
-              {successMessage.includes("deleted") 
-                ? "Updating your properties list..." 
-                : "Redirecting to your registered properties..."}
-            </p>
-          </div>
-        </div>
-      )}
+    
+
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-72">
@@ -458,7 +549,7 @@ const HousingRegistration: React.FC = () => {
               Housing Management
             </h1>
             <p className="text-gray-600 text-base md:text-lg">
-              Register and manage properties in the mapping system
+              Register and manage properties
             </p>
           </div>
 
