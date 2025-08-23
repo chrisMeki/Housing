@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { Map, Home, Search, Users, List, Settings, Bell, FileText, BarChart3, User, ChevronRight, X } from 'lucide-react';
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
+import {
+  Map,
+  Home,
+  Search,
+  Users,
+  List,
+  Settings,
+  Bell,
+  FileText,
+  BarChart3,
+  User,
+  ChevronRight,
+  X,
+} from "lucide-react";
 // @ts-ignore
-import logo from '../assets/images/logo.png'; // Adjust the path to your logo file
+import logo from "../assets/images/logo.png"; // Adjust the path to your logo file
 
-export default function HousingMappingSidebar({ isOpen = true, onClose = () => {} }) {
+export default function HousingMappingSidebar({
+  isOpen = true,
+  onClose = () => {},
+}) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Logo component
@@ -13,20 +29,65 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
       <img
         src={logo}
         alt="city council"
-        className={`${isCollapsed ? 'w-10 h-10' : 'w-30 h-auto'} object-contain transition-all duration-300`}
+        className={`${
+          isCollapsed ? "w-10 h-10" : "w-30 h-auto"
+        } object-contain transition-all duration-300`}
       />
     </div>
   );
 
   const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-600' },
-    { id: 'mapping', icon: Map, label: 'Property Mapping', path: '/mapping', color: 'text-green-600' },
-    { id: 'registrations', icon: Users, label: 'Housing Registration', path: '/registrations', color: 'text-purple-600' },
-    { id: 'reports', icon: FileText, label: 'Reports & Documents', path: '/reports', color: 'text-red-600' },
-    { id: 'listings', icon: List, label: 'Property Sale & ownership', path: '/listings', color: 'text-teal-600' },
+    {
+      id: "dashboard",
+      icon: Home,
+      label: "Dashboard",
+      path: "/dashboard",
+      color: "text-blue-600",
+    },
+    {
+      id: "mapping",
+      icon: Map,
+      label: "Property Mapping",
+      path: "/mapping",
+      color: "text-green-600",
+    },
+    {
+      id: "registrations",
+      icon: Users,
+      label: "Housing Registration",
+      path: "/registrations",
+      color: "text-purple-600",
+    },
+    {
+      id: "reports",
+      icon: FileText,
+      label: "Reports & Documents",
+      path: "/reports",
+      color: "text-red-600",
+    },
+    {
+      id: "ownership-transfer",
+      icon: List,
+      label: "Property Ownership transfer",
+      path: "/listings",
+      color: "text-teal-600",
+    },
+    {
+      id: "property-sale",
+      icon: List,
+      label: "Property Sale",
+      path: "/sale",
+      color: "text-teal-600",
+    },
   ];
 
-  const logoutItem = { id: 'logout', icon: User, label: 'Logout', path: '/logout', color: 'text-gray-600' };
+  const logoutItem = {
+    id: "logout",
+    icon: User,
+    label: "Logout",
+    path: "/logout",
+    color: "text-gray-600",
+  };
 
   return (
     <>
@@ -38,9 +99,11 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
         />
       )}
 
-      <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col ${
-        isCollapsed ? 'w-16' : 'w-72'
-      } ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col ${
+          isCollapsed ? "w-16" : "w-72"
+        } ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+      >
         {/* Glass container */}
         <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-lg border-r border-gray-200/30 shadow-lg overflow-hidden">
           {/* Header */}
@@ -67,11 +130,11 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
                     <NavLink
                       key={item.id}
                       to={item.path}
-                      className={({ isActive }) => 
+                      className={({ isActive }) =>
                         `w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
-                          isActive 
-                            ? 'bg-blue-50/70 border-l-4 border-blue-500 text-blue-700' 
-                            : 'hover:bg-gray-50/50 text-gray-700'
+                          isActive
+                            ? "bg-blue-50/70 border-l-4 border-blue-500 text-blue-700"
+                            : "hover:bg-gray-50/50 text-gray-700"
                         }`
                       }
                       onClick={() => {
@@ -83,9 +146,15 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
                     >
                       {({ isActive }) => (
                         <>
-                          <Icon className={`w-5 h-5 ${isActive ? item.color : 'text-gray-500'} group-hover:scale-110 transition-transform`} />
+                          <Icon
+                            className={`w-5 h-5 ${
+                              isActive ? item.color : "text-gray-500"
+                            } group-hover:scale-110 transition-transform`}
+                          />
                           {!isCollapsed && (
-                            <span className="ml-3 font-medium">{item.label}</span>
+                            <span className="ml-3 font-medium">
+                              {item.label}
+                            </span>
                           )}
                           {isActive && !isCollapsed && (
                             <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -103,11 +172,11 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
               <NavLink
                 key={logoutItem.id}
                 to={logoutItem.path}
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
-                    isActive 
-                      ? 'bg-blue-50/70 border-l-4 border-blue-500 text-blue-700' 
-                      : 'hover:bg-gray-50/50 text-gray-700'
+                    isActive
+                      ? "bg-blue-50/70 border-l-4 border-blue-500 text-blue-700"
+                      : "hover:bg-gray-50/50 text-gray-700"
                   }`
                 }
                 onClick={() => {
@@ -119,9 +188,15 @@ export default function HousingMappingSidebar({ isOpen = true, onClose = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <logoutItem.icon className={`w-5 h-5 ${isActive ? logoutItem.color : 'text-gray-500'} group-hover:scale-110 transition-transform`} />
+                    <logoutItem.icon
+                      className={`w-5 h-5 ${
+                        isActive ? logoutItem.color : "text-gray-500"
+                      } group-hover:scale-110 transition-transform`}
+                    />
                     {!isCollapsed && (
-                      <span className="ml-3 font-medium">{logoutItem.label}</span>
+                      <span className="ml-3 font-medium">
+                        {logoutItem.label}
+                      </span>
                     )}
                     {isActive && !isCollapsed && (
                       <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>

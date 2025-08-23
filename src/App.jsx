@@ -11,6 +11,7 @@ import HousingLandingPage from "./pages/Landingpage";
 import LoginPage from "./pages/signup";
 import CreateAccountPage from "./pages/createaccount";
 import LogoutPage from "./pages/logoutpage";
+import PropertySales from "./pages/PropertySale";
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path='/analytics' element={<Analytics/>}/>
         <Route path='/search' element={<PropertySearch/>}/>
         <Route path='/listings' element={<PropertyOwnershipTransfer/>}/>
+        <Route path='/sale' element={<PropertySales/>}/>
         <Route path='/profile' element={<Profile/>}/>
         <Route path='/logout' element={<LogoutPage/>}/>
 

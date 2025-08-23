@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Menu,
   Bell,
@@ -12,11 +12,13 @@ import {
   X,
   Home,
   CheckCircle,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import HousingRegistrationService from "../services/Housing_service";
 
-interface PropertyTransfer {
+interface PropertySale {
   _id: string;
   propertyId: {
     address: string;
@@ -36,8 +38,9 @@ interface PropertyTransfer {
     contactNumber: string;
     email: string;
   };
-  transferDate: string;
-  transferPrice: number;
+  listedPrice: number;
+  soldPrice: number;
+  dateSold: string;
   photos: Array<{
     name: string;
     url: string;
@@ -47,7 +50,7 @@ interface PropertyTransfer {
   updatedAt: string;
 }
 
-interface PropertyTransferFormData {
+interface PropertySaleFormData {
   propertyId: string;
   currentOwner: {
     fullName: string;
@@ -59,18 +62,11 @@ interface PropertyTransferFormData {
     contactNumber: string;
     email: string;
   };
-  transferDate: string;
-  transferPrice: string;
+  listedPrice: string;
+  soldPrice: string;
+  dateSold: string;
 }
 
-interface PropertyPhoto {
-  id: number;
-  file: File;
-  url: string;
-  name: string;
-}
-
-// Add this interface after the existing interfaces
 interface HouseRegistration {
   _id: string;
   propertyType: string;
@@ -88,18 +84,22 @@ interface HouseRegistration {
   status: string;
 }
 
-const PropertyOwnershipTransfer: React.FC = () => {
+interface PropertyPhoto {
+  id: number;
+  file: File;
+  url: string;
+  name: string;
+}
+
+const PropertySales: React.FC = () => {
   //properties
   const [userProperties, setUserProperties] = useState<HouseRegistration[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"transfer" | "transferred">(
-    "transfer"
-  );
-  const [transferredProperties, setTransferredProperties] = useState<
-    PropertyTransfer[]
-  >([]);
-  const [formData, setFormData] = useState<PropertyTransferFormData>({
+  const [activeTab, setActiveTab] = useState<"sale" | "sold">("sale");
+  const [soldProperties, setSoldProperties] = useState<PropertySale[]>([]);
+  const [formData, setFormData] = useState<PropertySaleFormData>({
     propertyId: "",
     currentOwner: {
       fullName: "",
@@ -111,31 +111,29 @@ const PropertyOwnershipTransfer: React.FC = () => {
       contactNumber: "",
       email: "",
     },
-    transferDate: "",
-    transferPrice: "",
+    listedPrice: "",
+    soldPrice: "",
+    dateSold: "",
   });
 
   const [propertyPhotos, setPropertyPhotos] = useState<PropertyPhoto[]>([]);
 
-  // Mock data for transferred properties
+  //load user properties
   useEffect(() => {
-    // Load user's properties for transfer
+    // Load user's properties for sale
     loadUserProperties();
-    // Load transferred properties from backend
-    loadTransferredProperties();
+    setSoldProperties([]);
   }, []);
 
-  useEffect(() => {
-    console.log("User properties updated:", userProperties);
-  }, [userProperties]);
+  const loadUserProperties = useCallback(async () => {
+    if (loadingProperties) return; // Prevent multiple simultaneous calls
 
-  // Load user's properties for transfer
-  const loadUserProperties = async () => {
     setLoadingProperties(true);
     try {
       const userToken = localStorage.getItem("userToken");
       if (!userToken) {
         console.error("No user token found");
+        setUserProperties([]);
         return;
       }
 
@@ -153,24 +151,23 @@ const PropertyOwnershipTransfer: React.FC = () => {
         }
       } catch (decodeError) {
         console.error("Error decoding token:", decodeError);
-        // If token decoding fails, you might want to redirect to login
+        setUserProperties([]);
         return;
       }
 
       if (!userId) {
         console.error("No user ID found in token");
+        setUserProperties([]);
         return;
       }
 
-      console.log("Fetching properties for user ID:", userId); // Debug log
+      console.log("Fetching properties for user ID:", userId);
 
       const response =
         await HousingRegistrationService.getHousingRegistrationsByUserId(
           userId
         );
-
-      console.log("API response:", response); // Debug log
-
+      console.log("API response:", response);
       setUserProperties(response.data || []);
     } catch (error) {
       console.error("Error loading user properties:", error);
@@ -178,22 +175,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
     } finally {
       setLoadingProperties(false);
     }
-  };
-
-  // Load transferred properties from backend
-  const loadTransferredProperties = async () => {
-    try {
-      // You'll need to create this service method to fetch transferred properties
-      // const response = await PropertyTransferService.getTransferredProperties();
-      // setTransferredProperties(response.data || []);
-
-      // For now, keep empty until you implement the backend endpoint
-      setTransferredProperties([]);
-    } catch (error) {
-      console.error("Error loading transferred properties:", error);
-      setTransferredProperties([]);
-    }
-  };
+  }, [loadingProperties]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -235,7 +217,6 @@ const PropertyOwnershipTransfer: React.FC = () => {
       }));
     }
   };
-
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -271,33 +252,37 @@ const PropertyOwnershipTransfer: React.FC = () => {
       !formData.propertyId ||
       !formData.currentOwner.fullName ||
       !formData.newOwner.fullName ||
-      !formData.transferDate ||
-      !formData.transferPrice
+      !formData.listedPrice ||
+      !formData.soldPrice ||
+      !formData.dateSold
     ) {
       alert("Please fill in all required fields");
       return;
     }
 
-    // Validate transfer date is not in the past
-    const transferDate = new Date(formData.transferDate);
+    // Validate date sold is not in the future
+    const soldDate = new Date(formData.dateSold);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
 
-    if (transferDate < today) {
-      alert("Transfer date cannot be in the past");
+    if (soldDate > today) {
+      alert("Date sold cannot be in the future");
       return;
     }
 
-    // Validate transfer price is positive
-    if (parseFloat(formData.transferPrice) <= 0) {
-      alert("Transfer price must be positive");
+    // Validate prices are positive
+    if (
+      parseFloat(formData.listedPrice) <= 0 ||
+      parseFloat(formData.soldPrice) <= 0
+    ) {
+      alert("Listed price and sold price must be positive");
       return;
     }
 
-    console.log("Transfer submitted:", formData);
+    console.log("Sale recorded:", formData);
     console.log("Property photos:", propertyPhotos);
     alert(
-      `Property transfer initiated successfully with ${propertyPhotos.length} photos!`
+      `Property sale recorded successfully with ${propertyPhotos.length} photos!`
     );
 
     // Reset form
@@ -305,8 +290,9 @@ const PropertyOwnershipTransfer: React.FC = () => {
       propertyId: "",
       currentOwner: { fullName: "", contactNumber: "", email: "" },
       newOwner: { fullName: "", contactNumber: "", email: "" },
-      transferDate: "",
-      transferPrice: "",
+      listedPrice: "",
+      soldPrice: "",
+      dateSold: "",
     });
     setPropertyPhotos([]);
   };
@@ -328,7 +314,13 @@ const PropertyOwnershipTransfer: React.FC = () => {
     }).format(amount);
   };
 
-  // Get today's date in YYYY-MM-DD format for date input min value
+  const calculatePriceDifference = (listed: number, sold: number) => {
+    const difference = sold - listed;
+    const percentage = ((difference / listed) * 100).toFixed(1);
+    return { difference, percentage };
+  };
+
+  // Get today's date in YYYY-MM-DD format for date input max value
   const getTodayString = () => {
     const today = new Date();
     return today.toISOString().split("T")[0];
@@ -347,7 +339,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
           >
             <Menu className="h-6 w-6 text-gray-600" />
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Property Transfer</h1>
+          <h1 className="text-xl font-bold text-gray-800">Property Sales</h1>
           <div className="flex items-center space-x-2">
             <button className="p-2 rounded-md hover:bg-gray-100">
               <Bell className="h-6 w-6 text-gray-600" />
@@ -359,15 +351,15 @@ const PropertyOwnershipTransfer: React.FC = () => {
           {/* Header */}
           <div className="bg-white rounded-t-xl shadow-lg p-6 border-b mx-4 sm:mx-0">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="w-6 h-6 text-blue-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">
-                Property Ownership Transfer
+                Property Sales Management
               </h1>
             </div>
             <p className="text-gray-600">
-              Transfer property ownership to a new owner
+              Record and track property sales transactions
             </p>
           </div>
 
@@ -375,38 +367,38 @@ const PropertyOwnershipTransfer: React.FC = () => {
           <div className="bg-white border-b mx-4 sm:mx-0">
             <div className="flex">
               <button
-                onClick={() => setActiveTab("transfer")}
+                onClick={() => setActiveTab("sale")}
                 className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${
-                  activeTab === "transfer"
-                    ? "text-blue-600 border-b-2 border-blue-600"
+                  activeTab === "sale"
+                    ? "text-green-600 border-b-2 border-green-600"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 <FileText className="w-4 h-4" />
-                New Transfer
+                Record Sale
               </button>
               <button
-                onClick={() => setActiveTab("transferred")}
+                onClick={() => setActiveTab("sold")}
                 className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${
-                  activeTab === "transferred"
-                    ? "text-blue-600 border-b-2 border-blue-600"
+                  activeTab === "sold"
+                    ? "text-green-600 border-b-2 border-green-600"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 <CheckCircle className="w-4 h-4" />
-                Transferred Properties
+                Sold Properties
               </button>
             </div>
           </div>
 
           {/* Tab Content */}
-          {activeTab === "transfer" ? (
-            /* Transfer Form Content */
+          {activeTab === "sale" ? (
+            /* Sale Form Content */
             <div className="bg-white rounded-b-xl shadow-lg p-6 space-y-8 mx-4 sm:mx-0">
               {/* Property Selection */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <Building2 className="w-5 h-5 text-green-600" />
                   <h2 className="text-lg font-semibold text-gray-800">
                     Select Property
                   </h2>
@@ -420,7 +412,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
                     name="propertyId"
                     value={formData.propertyId}
                     onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     required
                     disabled={loadingProperties}
                   >
@@ -428,13 +420,12 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       {loadingProperties
                         ? "Loading properties..."
                         : userProperties.length === 0
-                        ? "No properties available for transfer"
-                        : "Select a property to transfer"}
+                        ? "No properties available for sale"
+                        : "Select a property that was sold"}
                     </option>
                     {userProperties
                       .filter(
                         (property) =>
-                          // Remove the status filter or make it more flexible
                           !property.status ||
                           property.status.toLowerCase() === "approved" ||
                           property.status === "Approved"
@@ -446,7 +437,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
                         </option>
                       ))}
                   </select>
-                  {/* Add debug info (remove this after fixing) */}
+                  {/* Debug info for development */}
                   {process.env.NODE_ENV === "development" && (
                     <div className="text-xs text-gray-400 mt-1">
                       Debug: {userProperties.length} properties loaded
@@ -462,8 +453,8 @@ const PropertyOwnershipTransfer: React.FC = () => {
                   )}
                   {userProperties.length === 0 && !loadingProperties && (
                     <p className="text-sm text-gray-500 mt-1">
-                      You need to register properties first before transferring
-                      them.
+                      You need to register properties first before recording
+                      sales.
                     </p>
                   )}
                 </div>
@@ -533,12 +524,12 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 )}
               </div>
 
-              {/* Current Owner */}
+              {/* Seller Information */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-5 h-5 text-blue-600" />
                   <h2 className="text-lg font-semibold text-gray-800">
-                    Current Owner Information
+                    Seller Information
                   </h2>
                 </div>
 
@@ -552,7 +543,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       name="currentOwner.fullName"
                       value={formData.currentOwner.fullName}
                       onChange={handleInputChange}
-                      placeholder="Enter current owner's full name"
+                      placeholder="Enter seller's full name"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
@@ -581,19 +572,19 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       name="currentOwner.email"
                       value={formData.currentOwner.email}
                       onChange={handleInputChange}
-                      placeholder="owner@example.com"
+                      placeholder="seller@example.com"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* New Owner */}
+              {/* Buyer Information */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <User className="w-5 h-5 text-green-600" />
+                  <User className="w-5 h-5 text-purple-600" />
                   <h2 className="text-lg font-semibold text-gray-800">
-                    New Owner Information
+                    Buyer Information
                   </h2>
                 </div>
 
@@ -607,8 +598,8 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       name="newOwner.fullName"
                       value={formData.newOwner.fullName}
                       onChange={handleInputChange}
-                      placeholder="Enter new owner's full name"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter buyer's full name"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       required
                     />
                   </div>
@@ -623,7 +614,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       value={formData.newOwner.contactNumber}
                       onChange={handleInputChange}
                       placeholder="e.g. +1-555-0456"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
 
@@ -636,38 +627,38 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       name="newOwner.email"
                       value={formData.newOwner.email}
                       onChange={handleInputChange}
-                      placeholder="newowner@example.com"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="buyer@example.com"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Transfer Details */}
+              {/* Sale Details */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <DollarSign className="w-5 h-5 text-purple-600" />
+                  <DollarSign className="w-5 h-5 text-green-600" />
                   <h2 className="text-lg font-semibold text-gray-800">
-                    Transfer Details
+                    Sale Details
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Transfer Price *
+                      Listed Price *
                     </label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                       <input
                         type="number"
-                        name="transferPrice"
-                        value={formData.transferPrice}
+                        name="listedPrice"
+                        value={formData.listedPrice}
                         onChange={handleInputChange}
                         placeholder="0"
                         min="0"
                         step="0.01"
-                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         required
                       />
                     </div>
@@ -675,19 +666,82 @@ const PropertyOwnershipTransfer: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Transfer Date *
+                      Sold Price *
                     </label>
-                    <input
-                      type="date"
-                      name="transferDate"
-                      value={formData.transferDate}
-                      onChange={handleInputChange}
-                      min={getTodayString()}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      required
-                    />
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="number"
+                        name="soldPrice"
+                        value={formData.soldPrice}
+                        onChange={handleInputChange}
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date Sold *
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="date"
+                        name="dateSold"
+                        value={formData.dateSold}
+                        onChange={handleInputChange}
+                        max={getTodayString()}
+                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
+
+                {/* Price difference indicator */}
+                {formData.listedPrice && formData.soldPrice && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    {(() => {
+                      const listed = parseFloat(formData.listedPrice);
+                      const sold = parseFloat(formData.soldPrice);
+                      const { difference, percentage } =
+                        calculatePriceDifference(listed, sold);
+                      const isPositive = difference >= 0;
+
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            Price difference:
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${
+                              isPositive ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {isPositive ? "+" : ""}
+                            {formatCurrency(difference)} (
+                            {isPositive ? "+" : ""}
+                            {percentage}%)
+                          </span>
+                          {isPositive ? (
+                            <span className="text-xs text-green-600">
+                              Above listing
+                            </span>
+                          ) : (
+                            <span className="text-xs text-red-600">
+                              Below listing
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -695,124 +749,136 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all duration-200 font-medium text-sm flex items-center gap-2"
+                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-200 font-medium text-sm flex items-center gap-2"
                 >
-                  <FileText className="w-4 h-4" />
-                  Submit Transfer Request
+                  <TrendingUp className="w-4 h-4" />
+                  Record Property Sale
                 </button>
               </div>
             </div>
           ) : (
-            /* Transferred Properties Content */
+            /* Sold Properties Content */
             <div className="bg-white rounded-b-xl shadow-lg p-6 mx-4 sm:mx-0">
               <div className="flex items-center gap-2 mb-6">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <h2 className="text-lg font-semibold text-gray-800">
-                  Transferred Properties
+                  Sold Properties
                 </h2>
               </div>
 
-              {transferredProperties.length === 0 ? (
+              {soldProperties.length === 0 ? (
                 <div className="text-center py-12">
                   <Home className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">
-                    No transferred properties found.
-                  </p>
+                  <p className="text-gray-500">No sold properties found.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {transferredProperties.map((transfer) => (
+                  {soldProperties.map((sale) => (
                     <div
-                      key={transfer._id}
+                      key={sale._id}
                       className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                     >
                       <div className="relative">
                         <img
                           src={
-                            transfer.propertyId.images?.[0] ||
-                            transfer.photos[0]?.url ||
+                            sale.propertyId.images?.[0] ||
+                            sale.photos[0]?.url ||
                             "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
                           }
                           alt="Property"
                           className="w-full h-48 object-cover"
                         />
                         <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
-                          TRANSFERRED
+                          SOLD
                         </div>
                       </div>
 
                       <div className="p-4">
                         <h3 className="font-semibold text-lg mb-1">
-                          {transfer.propertyId.address}
+                          {sale.propertyId.address}
                         </h3>
                         <p className="text-gray-600 text-sm mb-2 flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {transfer.propertyId.propertyType
+                          {sale.propertyId.propertyType
                             .charAt(0)
                             .toUpperCase() +
-                            transfer.propertyId.propertyType.slice(1)}
+                            sale.propertyId.propertyType.slice(1)}
                         </p>
 
                         <div className="grid grid-cols-2 gap-2 mb-3">
                           <div className="text-sm">
                             <span className="text-gray-500">Bedrooms:</span>{" "}
-                            {transfer.propertyId.bedrooms}
+                            {sale.propertyId.bedrooms}
                           </div>
                           <div className="text-sm">
                             <span className="text-gray-500">Bathrooms:</span>{" "}
-                            {transfer.propertyId.bathrooms}
+                            {sale.propertyId.bathrooms}
                           </div>
-                          <div className="text-sm col-span-2">
+                          <div className="text-sm">
                             <span className="text-gray-500">Area:</span>{" "}
-                            {transfer.propertyId.area} sq ft
+                            {sale.propertyId.area.toLocaleString()} sq ft
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-gray-500">Sold:</span>{" "}
+                            {formatDate(sale.dateSold)}
                           </div>
                         </div>
 
-                        <div className="border-t pt-3 mt-3">
-                          <div className="flex justify-between items-center mb-2">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500">
-                              Transfer Price:
+                              Listed Price:
                             </span>
-                            <span className="font-medium text-green-600">
-                              {formatCurrency(transfer.transferPrice)}
+                            <span className="text-sm font-medium">
+                              {formatCurrency(sale.listedPrice)}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500">
-                              Transfer Date:
+                              Sold Price:
                             </span>
-                            <span className="text-sm">
-                              {formatDate(transfer.transferDate)}
+                            <span className="text-sm font-semibold text-green-600">
+                              {formatCurrency(sale.soldPrice)}
                             </span>
                           </div>
+
+                          {(() => {
+                            const { difference, percentage } =
+                              calculatePriceDifference(
+                                sale.listedPrice,
+                                sale.soldPrice
+                              );
+                            const isPositive = difference >= 0;
+
+                            return (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-500">
+                                  Difference:
+                                </span>
+                                <span
+                                  className={`text-sm font-medium ${
+                                    isPositive
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {isPositive ? "+" : ""}
+                                  {percentage}%
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
-                        <div className="border-t pt-3 mt-3">
-                          <div className="mb-2">
-                            <span className="text-sm text-gray-500">From:</span>
-                            <p className="text-sm font-medium">
-                              {transfer.currentOwner.fullName}
-                            </p>
+                        <div className="mt-4 pt-3 border-t">
+                          <div className="text-xs text-gray-500 mb-1">
+                            <strong>Seller:</strong>{" "}
+                            {sale.currentOwner.fullName}
                           </div>
-                          <div>
-                            <span className="text-sm text-gray-500">To:</span>
-                            <p className="text-sm font-medium">
-                              {transfer.newOwner.fullName}
-                            </p>
+                          <div className="text-xs text-gray-500">
+                            <strong>Buyer:</strong> {sale.newOwner.fullName}
                           </div>
                         </div>
-
-                        {transfer.photos.length > 0 && (
-                          <div className="border-t pt-3 mt-3">
-                            <span className="text-sm text-gray-500">
-                              Photos:
-                            </span>
-                            <p className="text-sm">
-                              {transfer.photos.length} photo
-                              {transfer.photos.length !== 1 ? "s" : ""} attached
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -826,4 +892,4 @@ const PropertyOwnershipTransfer: React.FC = () => {
   );
 };
 
-export default PropertyOwnershipTransfer;
+export default PropertySales;
