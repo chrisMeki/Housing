@@ -15,6 +15,13 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import HousingRegistrationService from "../services/Housing_service";
+import PropertyTransferService from "../services/property sell_service";
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase configuration
+const supabaseUrl = "https://knovcypcijstnijircoy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtub3ZjeXBjaWpzdG5pamlyY295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3MjI1NzAsImV4cCI6MjA3MTI5ODU3MH0.sOo40BzZvQU-mcIo8A3QjW6ToXGijnWwe71Qot06cXA";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface PropertyTransfer {
   _id: string;
@@ -70,7 +77,6 @@ interface PropertyPhoto {
   name: string;
 }
 
-// Add this interface after the existing interfaces
 interface HouseRegistration {
   _id: string;
   propertyType: string;
@@ -89,7 +95,6 @@ interface HouseRegistration {
 }
 
 const PropertyOwnershipTransfer: React.FC = () => {
-  //properties
   const [userProperties, setUserProperties] = useState<HouseRegistration[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -114,22 +119,50 @@ const PropertyOwnershipTransfer: React.FC = () => {
     transferDate: "",
     transferPrice: "",
   });
-
   const [propertyPhotos, setPropertyPhotos] = useState<PropertyPhoto[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Mock data for transferred properties
   useEffect(() => {
-    // Load user's properties for transfer
     loadUserProperties();
-    // Load transferred properties from backend
     loadTransferredProperties();
+    extractUserIdFromToken();
   }, []);
 
   useEffect(() => {
     console.log("User properties updated:", userProperties);
   }, [userProperties]);
 
-  // Load user's properties for transfer
+  const extractUserIdFromToken = () => {
+    try {
+      const userToken = localStorage.getItem("userToken");
+      if (!userToken) {
+        console.error("No user token found");
+        return;
+      }
+
+      const tokenParts = userToken.split(".");
+      if (tokenParts.length === 3) {
+        const tokenPayload = JSON.parse(atob(tokenParts[1]));
+        const extractedUserId =
+          tokenPayload.userId ||
+          tokenPayload.id ||
+          tokenPayload.user_id ||
+          tokenPayload.sub;
+        
+        if (extractedUserId) {
+          setUserId(extractedUserId);
+          console.log("Extracted user ID:", extractedUserId);
+        } else {
+          console.error("No user ID found in token");
+        }
+      }
+    } catch (decodeError) {
+      console.error("Error decoding token:", decodeError);
+    }
+  };
+
   const loadUserProperties = async () => {
     setLoadingProperties(true);
     try {
@@ -139,7 +172,6 @@ const PropertyOwnershipTransfer: React.FC = () => {
         return;
       }
 
-      // More robust token decoding with error handling
       let userId;
       try {
         const tokenParts = userToken.split(".");
@@ -153,7 +185,6 @@ const PropertyOwnershipTransfer: React.FC = () => {
         }
       } catch (decodeError) {
         console.error("Error decoding token:", decodeError);
-        // If token decoding fails, you might want to redirect to login
         return;
       }
 
@@ -162,16 +193,25 @@ const PropertyOwnershipTransfer: React.FC = () => {
         return;
       }
 
-      console.log("Fetching properties for user ID:", userId); // Debug log
-
+      console.log("Fetching properties for user ID:", userId);
       const response =
         await HousingRegistrationService.getHousingRegistrationsByUserId(
           userId
         );
 
-      console.log("API response:", response); // Debug log
-
-      setUserProperties(response.data || []);
+      console.log("API response:", response);
+      
+      // Handle different response structures
+      if (response && Array.isArray(response)) {
+        setUserProperties(response);
+      } else if (response && response.data && Array.isArray(response.data)) {
+        setUserProperties(response.data);
+      } else if (response && response.properties && Array.isArray(response.properties)) {
+        setUserProperties(response.properties);
+      } else {
+        console.error("Unexpected response format:", response);
+        setUserProperties([]);
+      }
     } catch (error) {
       console.error("Error loading user properties:", error);
       setUserProperties([]);
@@ -180,14 +220,10 @@ const PropertyOwnershipTransfer: React.FC = () => {
     }
   };
 
-  // Load transferred properties from backend
   const loadTransferredProperties = async () => {
     try {
-      // You'll need to create this service method to fetch transferred properties
-      // const response = await PropertyTransferService.getTransferredProperties();
-      // setTransferredProperties(response.data || []);
-
-      // For now, keep empty until you implement the backend endpoint
+      // This would need to be implemented in your service
+      // For now, we'll keep it empty
       setTransferredProperties([]);
     } catch (error) {
       console.error("Error loading transferred properties:", error);
@@ -200,7 +236,6 @@ const PropertyOwnershipTransfer: React.FC = () => {
   ) => {
     const { name, value } = e.target;
 
-    // Auto-populate current owner info when property is selected
     if (name === "propertyId" && value) {
       const selectedProperty = userProperties.find(
         (prop) => prop._id === value
@@ -244,6 +279,12 @@ const PropertyOwnershipTransfer: React.FC = () => {
 
     fileArray.forEach((file) => {
       if (file.type.startsWith("image/")) {
+        // Validate file size (2MB limit)
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Each image should be less than 2MB');
+          return;
+        }
+        
         const reader = new FileReader();
         reader.onload = (event) => {
           const newPhoto: PropertyPhoto = {
@@ -265,7 +306,51 @@ const PropertyOwnershipTransfer: React.FC = () => {
     setPropertyPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
   };
 
-  const handleSubmit = () => {
+  // Function to upload images to Supabase
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    try {
+      setUploadProgress(0);
+      const uploadedUrls: string[] = [];
+      
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 9)}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`; // Remove the duplicate folder name
+
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('ownership_property')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type,
+          });
+
+        if (error) {
+          console.error("Upload error:", error);
+          throw error;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase
+          .storage
+          .from('ownership_property')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+        setUploadProgress((uploadedUrls.length / files.length) * 100);
+      }
+
+      return uploadedUrls;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw new Error('Failed to upload images. Please try again.');
+    } finally {
+      setUploadProgress(null);
+    }
+  };
+
+  const handleSubmit = async () => {
     // Validate required fields
     if (
       !formData.propertyId ||
@@ -294,21 +379,65 @@ const PropertyOwnershipTransfer: React.FC = () => {
       return;
     }
 
-    console.log("Transfer submitted:", formData);
-    console.log("Property photos:", propertyPhotos);
-    alert(
-      `Property transfer initiated successfully with ${propertyPhotos.length} photos!`
-    );
+    // Check if userId is available
+    if (!userId) {
+      alert("User authentication error. Please log in again.");
+      return;
+    }
 
-    // Reset form
-    setFormData({
-      propertyId: "",
-      currentOwner: { fullName: "", contactNumber: "", email: "" },
-      newOwner: { fullName: "", contactNumber: "", email: "" },
-      transferDate: "",
-      transferPrice: "",
-    });
-    setPropertyPhotos([]);
+    setIsSubmitting(true);
+    
+    try {
+      // Upload images first if any
+      let imageUrls: string[] = [];
+      if (propertyPhotos.length > 0) {
+        const files = propertyPhotos.map(photo => photo.file);
+        imageUrls = await uploadImages(files);
+        if (imageUrls.length !== propertyPhotos.length) {
+          throw new Error("Failed to upload some images. Please try again.");
+        }
+      }
+
+      // Prepare the data for the API
+      const transferData = {
+        propertyId: formData.propertyId,
+        currentOwner: formData.currentOwner,
+        newOwner: formData.newOwner,
+        transferDate: formData.transferDate,
+        transferPrice: parseFloat(formData.transferPrice),
+        photos: imageUrls.map((url, index) => ({
+          name: propertyPhotos[index].name,
+          url: url,
+          uploadDate: new Date().toISOString()
+        })),
+        userId: userId // Add the userId to the request
+      };
+
+      // Call the service to transfer property
+      const response = await PropertyTransferService.transferProperty(transferData);
+      
+      console.log("Transfer successful:", response);
+      alert("Property transfer initiated successfully!");
+      
+      // Reset form
+      setFormData({
+        propertyId: "",
+        currentOwner: { fullName: "", contactNumber: "", email: "" },
+        newOwner: { fullName: "", contactNumber: "", email: "" },
+        transferDate: "",
+        transferPrice: "",
+      });
+      setPropertyPhotos([]);
+      
+      // Reload transferred properties
+      loadTransferredProperties();
+      
+    } catch (error: any) {
+      console.error("Error transferring property:", error);
+      alert(error.message || "Failed to transfer property. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -328,11 +457,18 @@ const PropertyOwnershipTransfer: React.FC = () => {
     }).format(amount);
   };
 
-  // Get today's date in YYYY-MM-DD format for date input min value
   const getTodayString = () => {
     const today = new Date();
     return today.toISOString().split("T")[0];
   };
+
+  // Filter approved properties
+  const approvedProperties = userProperties.filter(
+    (property) =>
+      !property.status ||
+      property.status.toLowerCase() === "approved" ||
+      property.status === "Approved"
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -427,29 +563,20 @@ const PropertyOwnershipTransfer: React.FC = () => {
                     <option value="">
                       {loadingProperties
                         ? "Loading properties..."
-                        : userProperties.length === 0
+                        : approvedProperties.length === 0
                         ? "No properties available for transfer"
                         : "Select a property to transfer"}
                     </option>
-                    {userProperties
-                      .filter(
-                        (property) =>
-                          // Remove the status filter or make it more flexible
-                          !property.status ||
-                          property.status.toLowerCase() === "approved" ||
-                          property.status === "Approved"
-                      )
-                      .map((property) => (
-                        <option key={property._id} value={property._id}>
-                          {property.address} - {property.propertyType} (
-                          {property.bedrooms} bed, {property.bathrooms} bath)
-                        </option>
-                      ))}
+                    {approvedProperties.map((property) => (
+                      <option key={property._id} value={property._id}>
+                        {property.address} - {property.propertyType} (
+                        {property.bedrooms} bed, {property.bathrooms} bath)
+                      </option>
+                    ))}
                   </select>
-                  {/* Add debug info (remove this after fixing) */}
                   {process.env.NODE_ENV === "development" && (
                     <div className="text-xs text-gray-400 mt-1">
-                      Debug: {userProperties.length} properties loaded
+                      Debug: {userProperties.length} properties loaded, {approvedProperties.length} approved
                       {userProperties.length > 0 && (
                         <div>
                           Status values:{" "}
@@ -460,9 +587,9 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       )}
                     </div>
                   )}
-                  {userProperties.length === 0 && !loadingProperties && (
+                  {approvedProperties.length === 0 && !loadingProperties && (
                     <p className="text-sm text-gray-500 mt-1">
-                      You need to register properties first before transferring
+                      You need to register and get properties approved first before transferring
                       them.
                     </p>
                   )}
@@ -495,10 +622,23 @@ const PropertyOwnershipTransfer: React.FC = () => {
                       Click to upload property photos
                     </p>
                     <p className="text-sm text-gray-500">
-                      PNG, JPG, JPEG up to 10MB each
+                      PNG, JPG, JPEG up to 2MB each
                     </p>
                   </label>
                 </div>
+
+                {/* Upload Progress */}
+                {uploadProgress !== null && (
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Uploading: {Math.round(uploadProgress)}%
+                    </p>
+                  </div>
+                )}
 
                 {/* Photo Preview */}
                 {propertyPhotos.length > 0 && (
@@ -528,7 +668,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 {propertyPhotos.length > 0 && (
                   <p className="text-sm text-green-600">
                     {propertyPhotos.length} photo
-                    {propertyPhotos.length !== 1 ? "s" : ""} uploaded
+                    {propertyPhotos.length !== 1 ? "s" : ""} ready for upload
                   </p>
                 )}
               </div>
@@ -695,10 +835,17 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all duration-200 font-medium text-sm flex items-center gap-2"
+                  disabled={isSubmitting || approvedProperties.length === 0 || !userId}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FileText className="w-4 h-4" />
-                  Submit Transfer Request
+                  {isSubmitting ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      Submit Transfer Request
+                    </>
+                  )}
                 </button>
               </div>
             </div>
