@@ -17,6 +17,7 @@ import Sidebar from "../components/sidebar";
 import HousingRegistrationService from "../services/Housing_service";
 import PropertyTransferService from "../services/property sell_service";
 import { createClient } from '@supabase/supabase-js';
+import Swal from "sweetalert2";
 
 // Supabase configuration
 const supabaseUrl = "https://knovcypcijstnijircoy.supabase.co";
@@ -94,6 +95,15 @@ interface HouseRegistration {
   status: string;
 }
 
+// API Response types
+interface ApiResponse<T> {
+  data?: T;
+  transfers?: T;
+  properties?: T;
+  message?: string;
+  [key: string]: any;
+}
+
 const PropertyOwnershipTransfer: React.FC = () => {
   const [userProperties, setUserProperties] = useState<HouseRegistration[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
@@ -123,12 +133,18 @@ const PropertyOwnershipTransfer: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [loadingTransferred, setLoadingTransferred] = useState(false);
 
   useEffect(() => {
     loadUserProperties();
-    loadTransferredProperties();
     extractUserIdFromToken();
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      loadTransferredProperties();
+    }
+  }, [userId]);
 
   useEffect(() => {
     console.log("User properties updated:", userProperties);
@@ -201,13 +217,20 @@ const PropertyOwnershipTransfer: React.FC = () => {
 
       console.log("API response:", response);
       
-      // Handle different response structures
-      if (response && Array.isArray(response)) {
+      // Handle different response structures with proper type checking
+      if (Array.isArray(response)) {
         setUserProperties(response);
-      } else if (response && response.data && Array.isArray(response.data)) {
-        setUserProperties(response.data);
-      } else if (response && response.properties && Array.isArray(response.properties)) {
-        setUserProperties(response.properties);
+      } else if (response && typeof response === 'object') {
+        const apiResponse = response as ApiResponse<HouseRegistration[]>;
+        
+        if (Array.isArray(apiResponse.data)) {
+          setUserProperties(apiResponse.data);
+        } else if (Array.isArray(apiResponse.properties)) {
+          setUserProperties(apiResponse.properties);
+        } else {
+          console.error("Unexpected response format:", response);
+          setUserProperties([]);
+        }
       } else {
         console.error("Unexpected response format:", response);
         setUserProperties([]);
@@ -221,13 +244,35 @@ const PropertyOwnershipTransfer: React.FC = () => {
   };
 
   const loadTransferredProperties = async () => {
+    if (!userId) return;
+    
+    setLoadingTransferred(true);
     try {
-      // This would need to be implemented in your service
-      // For now, we'll keep it empty
-      setTransferredProperties([]);
+      const response = await PropertyTransferService.getTransferredPropertiesByUserId(userId);
+      
+      // Handle different response structures with proper type checking
+      if (Array.isArray(response)) {
+        setTransferredProperties(response);
+      } else if (response && typeof response === 'object') {
+        const apiResponse = response as ApiResponse<PropertyTransfer[]>;
+        
+        if (Array.isArray(apiResponse.data)) {
+          setTransferredProperties(apiResponse.data);
+        } else if (Array.isArray(apiResponse.transfers)) {
+          setTransferredProperties(apiResponse.transfers);
+        } else {
+          console.error("Unexpected response format:", response);
+          setTransferredProperties([]);
+        }
+      } else {
+        console.error("Unexpected response format:", response);
+        setTransferredProperties([]);
+      }
     } catch (error) {
       console.error("Error loading transferred properties:", error);
       setTransferredProperties([]);
+    } finally {
+      setLoadingTransferred(false);
     }
   };
 
@@ -417,7 +462,14 @@ const PropertyOwnershipTransfer: React.FC = () => {
       const response = await PropertyTransferService.transferProperty(transferData);
       
       console.log("Transfer successful:", response);
-      alert("Property transfer initiated successfully!");
+      
+      // Show success alert
+      Swal.fire({
+        icon: "success",
+        title: "Transfer Successful!",
+        text: "Property ownership transferred successfully!",
+        confirmButtonText: "OK",
+      });
       
       // Reset form
       setFormData({
@@ -496,7 +548,7 @@ const PropertyOwnershipTransfer: React.FC = () => {
           <div className="bg-white rounded-t-xl shadow-lg p-6 border-b mx-4 sm:mx-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="w-6 h-6 text-blue-600" />
+                <Building2 className="w-6 text-blue-600" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">
                 Property Ownership Transfer
@@ -859,7 +911,11 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 </h2>
               </div>
 
-              {transferredProperties.length === 0 ? (
+              {loadingTransferred ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Loading transferred properties...</p>
+                </div>
+              ) : transferredProperties.length === 0 ? (
                 <div className="text-center py-12">
                   <Home className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">
@@ -868,101 +924,106 @@ const PropertyOwnershipTransfer: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {transferredProperties.map((transfer) => (
-                    <div
-                      key={transfer._id}
-                      className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative">
-                        <img
-                          src={
-                            transfer.propertyId.images?.[0] ||
-                            transfer.photos[0]?.url ||
-                            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-                          }
-                          alt="Property"
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
-                          TRANSFERRED
-                        </div>
-                      </div>
-
-                      <div className="p-4">
-                        <h3 className="font-semibold text-lg mb-1">
-                          {transfer.propertyId.address}
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-2 flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {transfer.propertyId.propertyType
-                            .charAt(0)
-                            .toUpperCase() +
-                            transfer.propertyId.propertyType.slice(1)}
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-2 mb-3">
-                          <div className="text-sm">
-                            <span className="text-gray-500">Bedrooms:</span>{" "}
-                            {transfer.propertyId.bedrooms}
-                          </div>
-                          <div className="text-sm">
-                            <span className="text-gray-500">Bathrooms:</span>{" "}
-                            {transfer.propertyId.bathrooms}
-                          </div>
-                          <div className="text-sm col-span-2">
-                            <span className="text-gray-500">Area:</span>{" "}
-                            {transfer.propertyId.area} sq ft
+                  {transferredProperties.map((transfer) => {
+                    // Fix for the error: Check if propertyId exists and has propertyType
+                    const propertyType = transfer.propertyId?.propertyType || "Unknown";
+                    const capitalizedPropertyType = propertyType && propertyType.charAt
+                      ? propertyType.charAt(0).toUpperCase() + propertyType.slice(1)
+                      : "Unknown";
+                    
+                    return (
+                      <div
+                        key={transfer._id}
+                        className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="relative">
+                          <img
+                            src={
+                              transfer.propertyId?.images?.[0] ||
+                              transfer.photos[0]?.url ||
+                              "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+                            }
+                            alt="Property"
+                            className="w-full h-48 object-cover"
+                          />
+                          <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                            TRANSFERRED
                           </div>
                         </div>
 
-                        <div className="border-t pt-3 mt-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-gray-500">
-                              Transfer Price:
-                            </span>
-                            <span className="font-medium text-green-600">
-                              {formatCurrency(transfer.transferPrice)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-gray-500">
-                              Transfer Date:
-                            </span>
-                            <span className="text-sm">
-                              {formatDate(transfer.transferDate)}
-                            </span>
-                          </div>
-                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-1">
+                            {transfer.propertyId?.address || "Unknown Address"}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-2 flex items-center">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {capitalizedPropertyType}
+                          </p>
 
-                        <div className="border-t pt-3 mt-3">
-                          <div className="mb-2">
-                            <span className="text-sm text-gray-500">From:</span>
-                            <p className="text-sm font-medium">
-                              {transfer.currentOwner.fullName}
-                            </p>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="text-sm">
+                              <span className="text-gray-500">Bedrooms:</span>{" "}
+                              {transfer.propertyId?.bedrooms || "N/A"}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-gray-500">Bathrooms:</span>{" "}
+                              {transfer.propertyId?.bathrooms || "N/A"}
+                            </div>
+                            <div className="text-sm col-span-2">
+                              <span className="text-gray-500">Area:</span>{" "}
+                              {transfer.propertyId?.area ? `${transfer.propertyId.area} sq ft` : "N/A"}
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-sm text-gray-500">To:</span>
-                            <p className="text-sm font-medium">
-                              {transfer.newOwner.fullName}
-                            </p>
-                          </div>
-                        </div>
 
-                        {transfer.photos.length > 0 && (
                           <div className="border-t pt-3 mt-3">
-                            <span className="text-sm text-gray-500">
-                              Photos:
-                            </span>
-                            <p className="text-sm">
-                              {transfer.photos.length} photo
-                              {transfer.photos.length !== 1 ? "s" : ""} attached
-                            </p>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm text-gray-500">
+                                Transfer Price:
+                              </span>
+                              <span className="font-medium text-green-600">
+                                {formatCurrency(transfer.transferPrice)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm text-gray-500">
+                                Transfer Date:
+                              </span>
+                              <span className="text-sm">
+                                {formatDate(transfer.transferDate)}
+                              </span>
+                            </div>
                           </div>
-                        )}
+
+                          <div className="border-t pt-3 mt-3">
+                            <div className="mb-2">
+                              <span className="text-sm text-gray-500">From:</span>
+                              <p className="text-sm font-medium">
+                                {transfer.currentOwner?.fullName || "Unknown"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-sm text-gray-500">To:</span>
+                              <p className="text-sm font-medium">
+                                {transfer.newOwner?.fullName || "Unknown"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {transfer.photos && transfer.photos.length > 0 && (
+                            <div className="border-t pt-3 mt-3">
+                              <span className="text-sm text-gray-500">
+                                Photos:
+                              </span>
+                              <p className="text-sm">
+                                {transfer.photos.length} photo
+                                {transfer.photos.length !== 1 ? "s" : ""} attached
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

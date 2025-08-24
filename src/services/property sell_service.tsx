@@ -74,7 +74,6 @@ const PropertyTransferService = {
    */
   transferProperty: async (transferData: any): Promise<any> => {
     try {
-      // If an image file is included, upload to Supabase
       if (transferData.imageFile) {
         const imageUrl = await uploadImageToSupabase(transferData.imageFile);
         transferData.images = [imageUrl];
@@ -102,7 +101,6 @@ const PropertyTransferService = {
    */
   sellProperty: async (propertyId: string, sellData: any): Promise<any> => {
     try {
-      // If an image file is included, upload to Supabase
       if (sellData.imageFile) {
         const imageUrl = await uploadImageToSupabase(sellData.imageFile);
         sellData.images = [imageUrl];
@@ -123,6 +121,30 @@ const PropertyTransferService = {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         throw error.response?.data || "Failed to sell property";
+      } else {
+        throw "An unexpected error occurred";
+      }
+    }
+  },
+
+  /**
+   * Get transferred properties by userId
+   */
+  getTransferredPropertiesByUserId: async (
+    userId: string
+  ): Promise<any[]> => {
+    try {
+      const response = await axios.get(`${BASE_URL}/getbyuser/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        throw (
+          error.response?.data || "Failed to fetch transferred properties"
+        );
       } else {
         throw "An unexpected error occurred";
       }
