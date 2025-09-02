@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import HousingRegistrationService from "../services/Housing_service";
+import PropertySaleService from "../services/sell_service"; // Import the service
 
 interface PropertySale {
   _id: string;
@@ -65,6 +66,7 @@ interface PropertySaleFormData {
   listedPrice: string;
   soldPrice: string;
   dateSold: string;
+  imageFile?: File | null;
 }
 
 interface HouseRegistration {
@@ -92,9 +94,11 @@ interface PropertyPhoto {
 }
 
 const PropertySales: React.FC = () => {
-  //properties
+  // Properties
   const [userProperties, setUserProperties] = useState<HouseRegistration[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
+  const [loadingSales, setLoadingSales] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"sale" | "sold">("sale");
@@ -114,60 +118,62 @@ const PropertySales: React.FC = () => {
     listedPrice: "",
     soldPrice: "",
     dateSold: "",
+    imageFile: null,
   });
 
   const [propertyPhotos, setPropertyPhotos] = useState<PropertyPhoto[]>([]);
 
-  //load user properties
-  useEffect(() => {
-    // Load user's properties for sale
-    loadUserProperties();
-    setSoldProperties([]);
+  // Get user ID from token
+  const getUserId = useCallback((): string | null => {
+    const userToken = localStorage.getItem("userToken");
+    if (!userToken) return null;
+
+    try {
+      const tokenParts = userToken.split(".");
+      if (tokenParts.length === 3) {
+        const tokenPayload = JSON.parse(atob(tokenParts[1]));
+        return (
+          tokenPayload.userId ||
+          tokenPayload.id ||
+          tokenPayload.user_id ||
+          tokenPayload.sub ||
+          null
+        );
+      }
+    } catch (decodeError) {
+      console.error("Error decoding token:", decodeError);
+    }
+    return null;
   }, []);
 
+  // Load user properties
+  useEffect(() => {
+    loadUserProperties();
+  }, []);
+
+  // Load sold properties when tab changes
+  useEffect(() => {
+    if (activeTab === "sold") {
+      loadSoldProperties();
+    }
+  }, [activeTab]);
+
   const loadUserProperties = useCallback(async () => {
-    if (loadingProperties) return; // Prevent multiple simultaneous calls
+    if (loadingProperties) return;
 
     setLoadingProperties(true);
     try {
-      const userToken = localStorage.getItem("userToken");
-      if (!userToken) {
-        console.error("No user token found");
-        setUserProperties([]);
-        return;
-      }
-
-      // More robust token decoding with error handling
-      let userId;
-      try {
-        const tokenParts = userToken.split(".");
-        if (tokenParts.length === 3) {
-          const tokenPayload = JSON.parse(atob(tokenParts[1]));
-          userId =
-            tokenPayload.userId ||
-            tokenPayload.id ||
-            tokenPayload.user_id ||
-            tokenPayload.sub;
-        }
-      } catch (decodeError) {
-        console.error("Error decoding token:", decodeError);
-        setUserProperties([]);
-        return;
-      }
-
+      const userId = getUserId();
       if (!userId) {
-        console.error("No user ID found in token");
+        console.error("No user ID found");
         setUserProperties([]);
         return;
       }
-
-      console.log("Fetching properties for user ID:", userId);
 
       const response =
         await HousingRegistrationService.getHousingRegistrationsByUserId(
           userId
         );
-      console.log("API response:", response);
       setUserProperties(response.data || []);
     } catch (error) {
       console.error("Error loading user properties:", error);
@@ -175,7 +181,34 @@ const PropertySales: React.FC = () => {
     } finally {
       setLoadingProperties(false);
     }
-  }, [loadingProperties]);
+  }, [loadingProperties, getUserId]);
+
+  const loadSoldProperties = useCallback(async () => {
+    setLoadingSales(true);
+    try {
+      const userId = getUserId();
+      if (!userId) {
+        console.error("No user ID found");
+        setSoldProperties([]);
+        return;
+      }
+
+      const response = await PropertySaleService.getSalesByUser_Id(userId);
+      
+      // Handle different API response structures
+      let salesData = [];
+      
+    
+      console.log("Sales data:", salesData);
+      setSoldProperties(salesData || []);
+    } catch (error) {
+      console.error("Error loading sold properties:", error);
+      alert("Failed to load sold properties");
+      setSoldProperties([]);
+    } finally {
+      setLoadingSales(false);
+    }
+  }, [getUserId]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -217,6 +250,7 @@ const PropertySales: React.FC = () => {
       }));
     }
   };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -246,7 +280,7 @@ const PropertySales: React.FC = () => {
     setPropertyPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate required fields
     if (
       !formData.propertyId ||
@@ -279,22 +313,56 @@ const PropertySales: React.FC = () => {
       return;
     }
 
-    console.log("Sale recorded:", formData);
-    console.log("Property photos:", propertyPhotos);
-    alert(
-      `Property sale recorded successfully with ${propertyPhotos.length} photos!`
-    );
+    setSubmitting(true);
+    try {
+      // Get user ID from token
+      const userId = getUserId();
+      if (!userId) {
+        alert("User not authenticated. Please log in again.");
+        return;
+      }
 
-    // Reset form
-    setFormData({
-      propertyId: "",
-      currentOwner: { fullName: "", contactNumber: "", email: "" },
-      newOwner: { fullName: "", contactNumber: "", email: "" },
-      listedPrice: "",
-      soldPrice: "",
-      dateSold: "",
-    });
-    setPropertyPhotos([]);
+      // Prepare data for API
+      const saleData = {
+        propertyId: formData.propertyId,
+        currentOwner: formData.currentOwner,
+        newOwner: formData.newOwner,
+        listedPrice: parseFloat(formData.listedPrice),
+        soldPrice: parseFloat(formData.soldPrice),
+        dateSold: formData.dateSold,
+        userId: userId, // Add userId to the request
+        // Use the first photo if available
+        imageFile: propertyPhotos.length > 0 ? propertyPhotos[0].file : null,
+      };
+
+      // Call the service to create the sale
+      const response = await PropertySaleService.createSale(saleData);
+      
+      alert("Property sale recorded successfully!");
+      console.log("Sale created:", response);
+
+      // Reset form
+      setFormData({
+        propertyId: "",
+        currentOwner: { fullName: "", contactNumber: "", email: "" },
+        newOwner: { fullName: "", contactNumber: "", email: "" },
+        listedPrice: "",
+        soldPrice: "",
+        dateSold: "",
+        imageFile: null,
+      });
+      setPropertyPhotos([]);
+      
+      // Refresh sold properties list
+      if (activeTab === "sold") {
+        loadSoldProperties();
+      }
+    } catch (error: any) {
+      console.error("Error creating property sale:", error);
+      alert(error.message || "Failed to record property sale");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -749,10 +817,17 @@ const PropertySales: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-200 font-medium text-sm flex items-center gap-2"
+                  disabled={submitting}
+                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <TrendingUp className="w-4 h-4" />
-                  Record Property Sale
+                  {submitting ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      <TrendingUp className="w-4 h-4" />
+                      Record Property Sale
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -764,9 +839,16 @@ const PropertySales: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-800">
                   Sold Properties
                 </h2>
+                {loadingSales && (
+                  <span className="text-sm text-gray-500">Loading...</span>
+                )}
               </div>
 
-              {soldProperties.length === 0 ? (
+              {loadingSales ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Loading sold properties...</p>
+                </div>
+              ) : !Array.isArray(soldProperties) || soldProperties.length === 0 ? (
                 <div className="text-center py-12">
                   <Home className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">No sold properties found.</p>
@@ -781,8 +863,8 @@ const PropertySales: React.FC = () => {
                       <div className="relative">
                         <img
                           src={
-                            sale.propertyId.images?.[0] ||
-                            sale.photos[0]?.url ||
+                            sale.propertyId?.images?.[0] ||
+                            sale.photos?.[0]?.url ||
                             "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
                           }
                           alt="Property"
@@ -795,28 +877,30 @@ const PropertySales: React.FC = () => {
 
                       <div className="p-4">
                         <h3 className="font-semibold text-lg mb-1">
-                          {sale.propertyId.address}
+                          {sale.propertyId?.address || "Unknown Address"}
                         </h3>
                         <p className="text-gray-600 text-sm mb-2 flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {sale.propertyId.propertyType
-                            .charAt(0)
-                            .toUpperCase() +
-                            sale.propertyId.propertyType.slice(1)}
+                          {sale.propertyId?.propertyType
+                            ? sale.propertyId.propertyType.charAt(0).toUpperCase() +
+                              sale.propertyId.propertyType.slice(1)
+                            : "Unknown Property Type"}
                         </p>
 
                         <div className="grid grid-cols-2 gap-2 mb-3">
                           <div className="text-sm">
                             <span className="text-gray-500">Bedrooms:</span>{" "}
-                            {sale.propertyId.bedrooms}
+                            {sale.propertyId?.bedrooms || "N/A"}
                           </div>
                           <div className="text-sm">
                             <span className="text-gray-500">Bathrooms:</span>{" "}
-                            {sale.propertyId.bathrooms}
+                            {sale.propertyId?.bathrooms || "N/A"}
                           </div>
                           <div className="text-sm">
                             <span className="text-gray-500">Area:</span>{" "}
-                            {sale.propertyId.area.toLocaleString()} sq ft
+                            {sale.propertyId?.area
+                              ? sale.propertyId.area.toLocaleString() + " sq ft"
+                              : "N/A"}
                           </div>
                           <div className="text-sm">
                             <span className="text-gray-500">Sold:</span>{" "}
@@ -873,10 +957,11 @@ const PropertySales: React.FC = () => {
                         <div className="mt-4 pt-3 border-t">
                           <div className="text-xs text-gray-500 mb-1">
                             <strong>Seller:</strong>{" "}
-                            {sale.currentOwner.fullName}
+                            {sale.currentOwner?.fullName || "Unknown"}
                           </div>
                           <div className="text-xs text-gray-500">
-                            <strong>Buyer:</strong> {sale.newOwner.fullName}
+                            <strong>Buyer:</strong>{" "}
+                            {sale.newOwner?.fullName || "Unknown"}
                           </div>
                         </div>
                       </div>
