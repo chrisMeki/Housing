@@ -1,0 +1,868 @@
+{
+	"info": {
+		"_postman_id": "ad31bbe8-64da-4900-ae43-7bbb46030eaa",
+		"name": "Housing_and_Mapping",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40946566"
+	},
+	"item": [
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "signup",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4NjQ1YjI0ZDVlMjFkNDVjYjJjZTVlOSIsImVtYWlsIjoiYmVlQGdtYWlsLmNvbSIsImlhdCI6MTc1MTQxMTUzOSwiZXhwIjoxNzUxNDQwMzM5fQ.OHIyVif3DGlDHmQXxHawuDXho9lZXaPq1jAwUxmEbjQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Blessing\",\r\n  \"lastName\": \"Chinoz\",\r\n  \"email\": \"bee@gmail.com\",\r\n  \"contactNumber\": \"+1234567890\",\r\n  \"address\": \"123 Main Street, Springfield\",\r\n  \"password\": \"bless123\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/user_route/signup",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user_route",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4NjQ1YjI0ZDVlMjFkNDVjYjJjZTVlOSIsImVtYWlsIjoiYmVlQGdtYWlsLmNvbSIsImlhdCI6MTc1MTQxMTUzOSwiZXhwIjoxNzUxNDQwMzM5fQ.OHIyVif3DGlDHmQXxHawuDXho9lZXaPq1jAwUxmEbjQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"bee@gmail.com\",\r\n    \"password\":\"bless123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5050/api/v1/user_route/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5050",
+							"path": [
+								"api",
+								"v1",
+								"user_route",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/user_route/getall",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "admin",
+			"item": [
+				{
+					"name": "signup",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Blessing\",\r\n  \"lastName\": \"Chinoz\",\r\n  \"email\": \"Bees@gmail.com\",\r\n  \"contactNumber\": \"+1234567890\",\r\n  \r\n  \"password\": \"bless123\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/admin_route/signup",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin_route",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"Bees@gmail.com\",\r\n    \"password\":\"bless123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/admin_route/login",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin_route",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"Bees@gmail.com\",\r\n    \"password\":\"bless123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5050/api/v1/admin_route/getall",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5050",
+							"path": [
+								"api",
+								"v1",
+								"admin_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Housing registration",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userId\": \"68a6cded66b6db55287cec8f\",\r\n  \"propertyType\": \"Single Family Home\",\r\n  \"address\": \"4 Green Valley Road, Damofalls Park Phase 4, Zimbabwe\",\r\n  \"lat\": \"-17.8265\",\r\n  \"lng\": \"31.0348\",\r\n  \"ownerName\": \"Alice Smith\",\r\n  \"ownerPhone\": \"+263772345678\",\r\n  \"ownerEmail\": \"alice.smith@example.com\",\r\n  \"bedrooms\": 4,\r\n  \"bathrooms\": 3,\r\n  \"area\": 2200,\r\n  \"yearBuilt\": 2015,\r\n  \"description\": \"Beautiful family home with a garden and garage.\",\r\n  \"amenities\": [\"Garden\", \"Garage\", \"Security System\", \"Playground\"],\r\n  \"photos\": [\r\n    {\r\n      \"name\": \"Front View\",\r\n      \"url\": \"https://example.com/photos/home-front.jpg\"\r\n    },\r\n    {\r\n      \"name\": \"Backyard\",\r\n      \"url\": \"https://example.com/photos/backyard.jpg\"\r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/housing_route/create",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"housing_route",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/housing_route/getall",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"housing_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getbyID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OWNlZDRjYmM0NDNlMzJmMzE3MjBlZSIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTUxMTY0ODYsImV4cCI6MTc1NTE0NTI4Nn0.MR4NGxTeJxgXakfHfMKayJBroddd_kGpoa7zRGG_ySQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5050/api/v1/housing_route/get/689cf24af90653eac8f073e0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5050",
+							"path": [
+								"api",
+								"v1",
+								"housing_route",
+								"get",
+								"689cf24af90653eac8f073e0"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getbyUserID",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTY3MTk3ODgsImV4cCI6MTc1Njc0ODU4OH0.naxL-OhsyEoHM7EImLA2Kzg92MBzawqtYy4AXy2AY8s",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/housing_route/getbyuser/68a6cded66b6db55287cec8f",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"housing_route",
+								"getbyuser",
+								"68a6cded66b6db55287cec8f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "property_listings",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OWNlYzdkYmM0NDNlMzJmMzE3MjBlOCIsImVtYWlsIjoiYmVlQGdtYWlsLmNvbSIsImlhdCI6MTc1NTExNjA4NywiZXhwIjoxNzU1MTQ0ODg3fQ.HNnV0mnOzheZQc1LyTAI8MooVDfdWI4Aln4XXArP7Uc",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userId\": \"689cebfebc443e32f31720e5\",\r\n  \"propertyType\": \"Single Family Home\",\r\n  \"address\": \"45 Green Valley Road, Damofalls Park Phase 4, Zimbabwe\",\r\n  \"lat\": \"-17.8265\",\r\n  \"lng\": \"31.0348\",\r\n  \"ownerName\": \"Alice Smith\",\r\n  \"ownerPhone\": \"+263772345678\",\r\n  \"ownerEmail\": \"alice.smith@example.com\",\r\n  \"bedrooms\": 4,\r\n  \"bathrooms\": 3,\r\n  \"area\": 2200,\r\n  \"yearBuilt\": 2015,\r\n  \"description\": \"Beautiful family home with a garden and garage.\",\r\n  \"amenities\": [\"Garden\", \"Garage\", \"Security System\", \"Playground\"],\r\n  \"photos\": [\r\n    {\r\n      \"name\": \"Front View\",\r\n      \"url\": \"https://example.com/photos/home-front.jpg\"\r\n    },\r\n    {\r\n      \"name\": \"Backyard\",\r\n      \"url\": \"https://example.com/photos/backyard.jpg\"\r\n    }\r\n  ]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "http://localhost:5050/api/v1/property_listings_route/create",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5050",
+							"path": [
+								"api",
+								"v1",
+								"property_listings_route",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "reports",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU4NTk2MjMsImV4cCI6MTc1NTg4ODQyM30.rCpO8CkOd94ZloBE9X7t-44_ycHJ1QQPx1ClZ1fDSJk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Monthly Sales Report\",\r\n  \"description\": \"Detailed analysis of property sales and revenue for July 2025\",\r\n  \"userId\": \"68a6cded66b6db55287cec8f\",\r\n  \"document\": {\r\n    \"name\": \"july-sales.pdf\",\r\n    \"url\": \"https://example-bucket.s3.amazonaws.com/reports/july-sales.pdf\",\r\n    \"fileType\": \"pdf\"\r\n  }\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/reports_route/create",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports_route",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU4NjI1NDQsImV4cCI6MTc1NTg5MTM0NH0.6X-iC2d7N_1GjXjm4epumLisYAE7XxgM-3YoVgHEJ0A",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/reports_route/getall",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "property transfer",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userId\": \"68a6cded66b6db55287cec8f\",\r\n  \"propertyId\": \"68a65ce6c1f45dfbe7ebfa67\",\r\n\r\n  \"currentOwner\": {\r\n    \"fullName\": \"John Doe\",\r\n    \"contactNumber\": \"+263 772 123 456\",\r\n    \"email\": \"johndoe@example.com\"\r\n  },\r\n\r\n  \"newOwner\": {\r\n    \"fullName\": \"Jane Smith\",\r\n    \"contactNumber\": \"+263 771 987 654\",\r\n    \"email\": \"janesmith@example.com\"\r\n  },\r\n\r\n  \"transferDate\": \"2025-09-01T00:00:00.000Z\",\r\n  \"transferPrice\": 75000,\r\n\r\n  \"photos\": [\r\n    {\r\n      \"name\": \"front_view.jpg\",\r\n      \"url\": \"https://example.com/uploads/front_view.jpg\"\r\n    },\r\n    {\r\n      \"name\": \"backyard.jpg\",\r\n      \"url\": \"https://example.com/uploads/backyard.jpg\"\r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_transfer_route/create",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_transfer_route",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_transfer_route/getall",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_transfer_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getbyuserId",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTU5NDYxNTEsImV4cCI6MTc1NTk3NDk1MX0.27nPPOCXPW-rV10ZN6bKkayDt4GWSa6ykk4vN-b3moo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_transfer_route/getbyuser/68a44a9b36c3c026f921f780",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_transfer_route",
+								"getbyuser",
+								"68a44a9b36c3c026f921f780"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_transfer_route/delete",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_transfer_route",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "property sale",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTY3MTk3ODgsImV4cCI6MTc1Njc0ODU4OH0.naxL-OhsyEoHM7EImLA2Kzg92MBzawqtYy4AXy2AY8s",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userId\": \"68a6cded66b6db55287cec8f\",\r\n  \"propertyId\": \"68b56952667299324fc4ce68\",\r\n\r\n  \"currentOwner\": {\r\n    \"fullName\": \"Michael Johnson\",\r\n    \"contactNumber\": \"+263 772 456 789\",\r\n    \"email\": \"michael.johnson@example.com\"\r\n  },\r\n\r\n  \"newOwner\": {\r\n    \"fullName\": \"Sarah Williams\",\r\n    \"contactNumber\": \"+263 773 654 321\",\r\n    \"email\": \"sarah.williams@example.com\"\r\n  },\r\n\r\n  \"listedPrice\": 85000,\r\n  \"soldPrice\": 80000,\r\n  \"dateSold\": \"2025-08-15T00:00:00.000Z\",\r\n\r\n  \"photos\": [\r\n    {\r\n      \"name\": \"living_room.jpg\",\r\n      \"url\": \"https://example.com/uploads/living_room.jpg\"\r\n    },\r\n    {\r\n      \"name\": \"kitchen.jpg\",\r\n      \"url\": \"https://example.com/uploads/kitchen.jpg\"\r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_sale_route/create",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_sale_route",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getall",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTY3MTk3ODgsImV4cCI6MTc1Njc0ODU4OH0.naxL-OhsyEoHM7EImLA2Kzg92MBzawqtYy4AXy2AY8s",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_sale_route/getall",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_sale_route",
+								"getall"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getbyUser_Id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YTFlODEyYTZjNzYyNjdjM2UzNjQ5ZCIsImVtYWlsIjoiQmVlc0BnbWFpbC5jb20iLCJpYXQiOjE3NTY3MTk3ODgsImV4cCI6MTc1Njc0ODU4OH0.naxL-OhsyEoHM7EImLA2Kzg92MBzawqtYy4AXy2AY8s",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_sale_route/getbyuser/68a6cded66b6db55287cec8f",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_sale_route",
+								"getbyuser",
+								"68a6cded66b6db55287cec8f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://housing-backend-xwrj.onrender.com/api/v1/prop_sale_route/delete",
+							"protocol": "https",
+							"host": [
+								"housing-backend-xwrj",
+								"onrender",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"prop_sale_route",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
